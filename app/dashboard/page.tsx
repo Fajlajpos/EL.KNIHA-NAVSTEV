@@ -1135,7 +1135,6 @@ export default function DashboardPage() {
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d1d1f] flex items-center gap-1.5">
-                    <span className="h-2 w-2 bg-rose-500 rounded-full animate-ping"></span>
                     Kdo je aktuálně ve firmě
                   </h3>
                 </div>
@@ -1302,7 +1301,7 @@ export default function DashboardPage() {
                       const isOvertime = stats.balance >= 0;
 
                       return (
-                        <tr key={user.id} className="hover:bg-black/[0.06]">
+                        <tr key={user.id} className="hover-rounded cursor-pointer">
                           <td className="px-4 py-3.5 font-sans">
                             <span className="font-bold text-[#1d1d1f] block">{user.lastName} {user.firstName}</span>
                             <span className="text-[10px] text-[#6e6e73] block font-mono">Číslo: {user.employeeNumber} • {user.department}</span>
@@ -1522,7 +1521,7 @@ export default function DashboardPage() {
                 }
 
                 return (
-                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto pr-2">
+                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto px-2">
                   {filteredShifts.map((shift) => {
                     const isEditing = editingShiftId === shift.id;
                     const netHours = isEditing
@@ -1531,7 +1530,7 @@ export default function DashboardPage() {
 
                     if (isEditing) {
                       return (
-                        <div key={shift.id} className="py-3 bg-black/[0.04] -mx-2 px-2 rounded-lg">
+                        <div key={shift.id} className="py-3 bg-black/[0.04] px-3.5 rounded-xl">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.06] border border-black/[0.08] text-[#6e6e73]">
                               {shift.user.lastName} {shift.user.firstName}
@@ -1614,7 +1613,7 @@ export default function DashboardPage() {
                     }
 
                     return (
-                      <div key={shift.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono">
+                      <div key={shift.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono hover:bg-black/[0.04] px-3.5 rounded-xl transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[#1d1d1f]">
@@ -1874,14 +1873,14 @@ export default function DashboardPage() {
                   Žádní registrovaní zaměstnanci.
                 </div>
               ) : (
-                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto pr-2">
+                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto px-2">
                   {credentialUsers.map((cred) => {
                     const dbUser = users.find((u) => u.employeeNumber === cred.employeeNumber);
                     return (
                       <div
                         key={cred.username}
                         onClick={() => handleSelectEmployee(cred.username)}
-                        className="py-3.5 flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-black/[0.06] -mx-2 px-2 rounded-lg transition-colors"
+                        className="py-3.5 flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-black/[0.06] px-3.5 rounded-xl transition-all"
                         title="Zobrazit přihlašovací údaje"
                       >
                         <div className="space-y-1">
@@ -2055,19 +2054,19 @@ export default function DashboardPage() {
       {/* Floating Chatbot Widget */}
       <div className="fixed bottom-6 right-6 z-50 font-sans">
         {isChatOpen ? (
-          <div className="bg-white/95 backdrop-blur-md w-80 sm:w-96 h-[500px] rounded-2xl border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+          <div className="glass-liquid w-80 sm:w-96 h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
             {/* Header */}
-            <div className="bg-[#0071e3] px-4 py-3 text-white flex items-center justify-between shadow-sm">
+            <div className="bg-white/50 px-4 py-3.5 border-b border-white/60 text-[#1d1d1f] flex items-center justify-between shadow-sm relative z-10">
               <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-[#1d1d1f] animate-pulse" />
+                <Bot className="h-5 w-5 text-[#0071e3] animate-pulse" />
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider">CHECKNI TO AI</h4>
-                  <span className="text-[9px] text-[#1d1d1f] font-bold block">Online asistent docházky</span>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">CHECKNI TO AI</h4>
+                  <span className="text-[9px] text-[#6e6e73] font-semibold block">Online asistent docházky</span>
                 </div>
               </div>
               <button 
                 onClick={() => setIsChatOpen(false)}
-                className="text-white/80 hover:text-white hover:bg-[#0077ed]/50 p-1 rounded-lg transition-colors"
+                className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] p-1 rounded-lg transition-colors"
                 aria-label="Zavřít chat"
               >
                 <X className="h-4 w-4" />
@@ -2075,7 +2074,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Messages Viewport */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/[0.04]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/[0.02]">
               {chatMessages.map((msg, index) => {
                 const isUser = msg.role === "user";
                 return (
@@ -2086,8 +2085,8 @@ export default function DashboardPage() {
                     <div 
                       className={`px-3 py-2 rounded-2xl text-[11px] shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
                         isUser 
-                          ? "bg-[#0071e3] text-white rounded-tr-none animate-in fade-in duration-200" 
-                          : "bg-white border border-black/[0.08] text-[#1d1d1f] rounded-tl-none animate-in fade-in duration-200"
+                          ? "chat-bubble-user rounded-tr-none animate-in fade-in duration-200" 
+                          : "chat-bubble-assistant rounded-tl-none animate-in fade-in duration-200"
                       }`}
                     >
                       {isUser ? msg.content : renderMarkdown(msg.content)}
@@ -2097,7 +2096,7 @@ export default function DashboardPage() {
               })}
               
               {isChatLoading && (
-                <div className="flex items-center gap-2 text-[#86868b] bg-white border border-black/5 px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
+                <div className="flex items-center gap-2 text-[#86868b] chat-bubble-assistant px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6e6e73]" />
                   <span>AI píše...</span>
                 </div>
@@ -2113,7 +2112,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Prompts Panel */}
-            <div className="px-3 py-2 border-t border-black/5 bg-white flex flex-wrap gap-1.5 shrink-0 select-none">
+            <div className="px-3 py-2 border-t border-white/40 bg-white/20 flex flex-wrap gap-1.5 shrink-0 select-none backdrop-blur-md">
               {[
                 "Kdo je teď v budově?",
                 "Ukaž dnešní směny",
@@ -2124,7 +2123,7 @@ export default function DashboardPage() {
                   type="button"
                   disabled={isChatLoading}
                   onClick={() => handleSendChatMessage(promptText)}
-                  className="bg-black/[0.04] hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/10 text-[#1d1d1f] hover:text-[#6e6e73] font-bold px-2 py-1 rounded-lg text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                  className="bg-white/60 hover:bg-white/80 border border-white/80 text-[#6e6e73] hover:text-[#1d1d1f] font-bold px-2.5 py-1 rounded-full text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
                 >
                   {promptText}
                 </button>
@@ -2134,7 +2133,7 @@ export default function DashboardPage() {
             {/* Input Form */}
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }}
-              className="p-3 border-t border-black/[0.08] bg-white flex gap-2 items-center shrink-0"
+              className="p-3 border-t border-white/40 bg-white/30 flex gap-2 items-center shrink-0 backdrop-blur-md"
             >
               <input
                 type="text"
@@ -2142,7 +2141,7 @@ export default function DashboardPage() {
                 onChange={(e) => setChatInput(e.target.value)}
                 disabled={isChatLoading}
                 placeholder="Zeptejte se asistenta..."
-                className="flex-1 px-3 py-2 bg-black/[0.04] border border-black/[0.08] rounded-xl text-[11px] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
+                className="flex-1 px-3 py-2 bg-white/60 border border-white/80 rounded-xl text-[11px] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
               />
               <button
                 type="submit"

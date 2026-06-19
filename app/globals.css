@@ -82,6 +82,7 @@ body {
    ============================================================ */
 @layer components {
   /* ---------- LIQUID GLASS CARD ---------- */
+  /* ---------- LIQUID GLASS CARD ---------- */
   .glass-liquid {
     position: relative;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.25) 100%);
@@ -89,6 +90,16 @@ body {
     -webkit-backdrop-filter: blur(32px) saturate(210%) brightness(1.03);
     border: 1px solid var(--glass-edge);
     box-shadow: var(--shadow-glass);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .glass-liquid:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+      inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95), 
+      inset 0 -1.5px 2px rgba(255, 255, 255, 0.45), 
+      0 18px 45px -8px rgba(0, 0, 0, 0.08), 
+      0 4px 12px -2px rgba(0, 0, 0, 0.02);
   }
   /* Speculární odlesk (zkosená horní leštěná hrana) */
   .glass-liquid::before {
@@ -118,6 +129,15 @@ body {
     -webkit-backdrop-filter: blur(30px) saturate(190%);
     border: 1px solid var(--glass-edge);
     box-shadow: var(--shadow-md);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .surface:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+      inset 0 1px 0 rgba(255, 255, 255, 0.9), 
+      0 20px 48px -10px rgba(0, 0, 0, 0.08), 
+      0 3px 6px rgba(0, 0, 0, 0.02);
   }
   .surface-lg {
     @apply rounded-3xl;
@@ -126,6 +146,15 @@ body {
     -webkit-backdrop-filter: blur(32px) saturate(200%);
     border: 1px solid var(--glass-edge);
     box-shadow: var(--shadow-lg);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .surface-lg:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+      inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95), 
+      0 24px 60px -8px rgba(0, 0, 0, 0.12), 
+      0 4px 8px rgba(0, 0, 0, 0.02);
   }
   .glass {
     @apply glass-liquid rounded-3xl;
@@ -149,10 +178,11 @@ body {
     -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.03);
     border: 1px solid var(--glass-edge);
     box-shadow: var(--shadow-glass);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
   }
   .stat-card:hover {
-    transform: translateY(-4px) scale(1.01);
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(255, 255, 255, 0.95);
     box-shadow: 
       inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
       inset 0 -1.5px 2px rgba(255, 255, 255, 0.55),
@@ -164,6 +194,10 @@ body {
     background: rgba(0, 113, 227, 0.07);
     border: 1px solid rgba(0, 113, 227, 0.15);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.25s ease;
+  }
+  .stat-card:hover .stat-icon {
+    transform: scale(1.08) rotate(2deg);
   }
 
   /* ---------- TLAČÍTKA (Apple Liquid Glass - Bílý Efekt) ---------- */
@@ -171,10 +205,13 @@ body {
     @apply relative overflow-hidden inline-flex items-center justify-center gap-2 rounded-full font-bold text-[13px]
            transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none select-none;
     letter-spacing: -0.01em;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.85) 100%);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    /* Kombinace bodového lesku a lomu světla (meniscus) dělá sklo skutečně tekutým */
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.76) 48%, rgba(255, 255, 255, 0.68) 49%, rgba(255, 255, 255, 0.84) 100%);
+    backdrop-filter: blur(28px) saturate(220%);
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
   }
 
   /* Speculární vrchní odlesk (optická čočka/kapka vody) */
@@ -182,10 +219,10 @@ body {
     content: "";
     position: absolute;
     top: 1px;
-    left: 1px;
-    right: 1px;
-    height: 46%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.08) 100%);
+    left: 2px;
+    right: 2px;
+    height: 45%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.05) 100%);
     border-radius: 9999px 9999px 0 0;
     pointer-events: none;
     z-index: 2;
@@ -196,7 +233,7 @@ body {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
     transform: translateX(-150%) skewX(-25deg);
     transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
@@ -218,20 +255,22 @@ body {
   .btn-primary {
     @apply btn px-5 py-2.5;
     color: #0071e3;
-    border: 1px solid rgba(0, 113, 227, 0.2);
+    border: 1px solid rgba(0, 113, 227, 0.25);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(0, 113, 227, 0.03),
-      0 4px 12px rgba(0, 113, 227, 0.06),
+      inset 0 -2.5px 5px rgba(0, 113, 227, 0.04),
+      0 4px 12px rgba(0, 113, 227, 0.08),
       0 1px 2px rgba(0, 0, 0, 0.01);
   }
   .btn-primary:hover {
-    border-color: rgba(0, 113, 227, 0.35);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border-color: rgba(0, 113, 227, 0.45);
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.86) 48%, rgba(255, 255, 255, 0.78) 49%, rgba(255, 255, 255, 0.92) 100%);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(0, 113, 227, 0.05),
-      0 8px 20px rgba(0, 113, 227, 0.12),
+      inset 0 -2.5px 5px rgba(0, 113, 227, 0.06),
+      0 8px 20px rgba(0, 113, 227, 0.16),
       0 2px 4px rgba(0, 0, 0, 0.02);
   }
   .btn-primary:active {
@@ -245,19 +284,21 @@ body {
   .btn-ghost {
     @apply btn px-4 py-2.5;
     color: var(--text);
-    border: 1px solid rgba(0, 0, 0, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.02),
+      inset 0 -2.5px 5px rgba(0, 0, 0, 0.02),
       0 4px 12px rgba(0, 0, 0, 0.03),
       0 1px 2px rgba(0, 0, 0, 0.01);
   }
   .btn-ghost:hover {
-    border-color: rgba(0, 0, 0, 0.15);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border-color: rgba(0, 0, 0, 0.18);
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.86) 48%, rgba(255, 255, 255, 0.78) 49%, rgba(255, 255, 255, 0.92) 100%);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.04),
+      inset 0 -2.5px 5px rgba(0, 0, 0, 0.04),
       0 8px 20px rgba(0, 0, 0, 0.06),
       0 2px 4px rgba(0, 0, 0, 0.02);
   }
@@ -278,29 +319,33 @@ body {
       0 2px 8px rgba(0, 0, 0, 0.02);
   }
   .btn-soft:hover {
-    border-color: rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.12);
     color: var(--text);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 100%);
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.86) 48%, rgba(255, 255, 255, 0.78) 49%, rgba(255, 255, 255, 0.92) 100%);
   }
 
   /* Danger — Bílý liquid glass s červeným textem a červeným akcentem */
   .btn-danger {
     @apply btn px-5 py-2.5;
     color: #e11d48;
-    border: 1px solid rgba(225, 29, 72, 0.2);
+    border: 1px solid rgba(225, 29, 72, 0.25);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(225, 29, 72, 0.03),
+      inset 0 -2.5px 5px rgba(225, 29, 72, 0.04),
       0 4px 12px rgba(225, 29, 72, 0.06),
       0 1px 2px rgba(0, 0, 0, 0.01);
   }
   .btn-danger:hover {
-    border-color: rgba(225, 29, 72, 0.35);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 100%);
+    border-color: rgba(225, 29, 72, 0.45);
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.86) 48%, rgba(255, 255, 255, 0.78) 49%, rgba(255, 255, 255, 0.92) 100%);
     box-shadow:
       inset 0 1px 0.5px rgba(255, 255, 255, 1),
-      inset 0 -2px 4px rgba(225, 29, 72, 0.05),
-      0 8px 20px rgba(225, 29, 72, 0.12),
+      inset 0 -2.5px 5px rgba(225, 29, 72, 0.06),
+      0 8px 20px rgba(225, 29, 72, 0.16),
       0 2px 4px rgba(0, 0, 0, 0.02);
   }
   .btn-danger:active {
@@ -310,6 +355,35 @@ body {
       0 2px 4px rgba(0, 0, 0, 0.01);
   }
 
+  /* Skleněný odznak pro logo v sidebaru */
+  .logo-glass-badge {
+    position: relative;
+    overflow: hidden;
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.72) 48%, rgba(255, 255, 255, 0.35) 49%, rgba(255, 255, 255, 0.8) 100%);
+    backdrop-filter: blur(28px) saturate(220%);
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      inset 0 1px 0.5px rgba(255, 255, 255, 1),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.03),
+      0 4px 12px rgba(0, 0, 0, 0.05),
+      0 1px 2px rgba(0, 0, 0, 0.01);
+  }
+  .logo-glass-badge::before {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    height: 45%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.05) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+  }
+
   /* ---------- Formulářové prvky (sklo) ---------- */
   .field-label {
     @apply block text-[12px] font-medium mb-1.5;
@@ -317,14 +391,22 @@ body {
   }
   .input,
   .select {
-    @apply block w-full px-4 py-2.5 rounded-2xl text-sm outline-none transition-all;
+    @apply block w-full px-4 py-2.5 rounded-2xl text-sm outline-none transition-all duration-200;
     color: var(--text);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.4) 100%);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow:
-      inset 0 1px 0.5px rgba(255, 255, 255, 0.9),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
       0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  .input:hover,
+  .select:hover {
+    border-color: rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%);
+    box-shadow:
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+      0 2px 6px rgba(0, 0, 0, 0.03);
   }
   .input::placeholder { color: var(--text-3); }
   .input:focus,
@@ -342,6 +424,14 @@ body {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.35) 100%);
     color: var(--text-2);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+  }
+  .chip:hover {
+    transform: translateY(-1.5px) scale(1.03);
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 
+      inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95), 
+      0 6px 15px rgba(0, 0, 0, 0.04);
   }
   .chip-indigo,
   .chip-green,
@@ -406,6 +496,93 @@ body {
     background: rgba(0, 113, 227, 0.08);
     border: 1px solid rgba(0, 113, 227, 0.18);
     box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.8);
+  }
+
+  /* ---------- LOGO LIQUID GLASS ---------- */
+  .logo-liquid-glass-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-liquid-glass-sheen,
+  .logo-liquid-glass-highlight {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mask-image: url("/logo-mark-dark.png");
+    -webkit-mask-image: url("/logo-mark-dark.png");
+    mask-size: contain;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-position: center;
+  }
+  .logo-liquid-glass-sheen {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(0, 0, 0, 0.25) 100%);
+    mix-blend-mode: overlay;
+    z-index: 12;
+  }
+  .logo-liquid-glass-highlight {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 45%);
+    mix-blend-mode: screen;
+    z-index: 13;
+  }
+  .logo-liquid-glass-container::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 3.5px;
+    height: 3.5px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    filter: blur(0.2px);
+    z-index: 14;
+    pointer-events: none;
+    box-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+  }
+
+  /* ---------- ROUNDED TABLE ROW HOVER ---------- */
+  tr.hover-rounded {
+    transition: background-color 0.25s ease;
+  }
+  tr.hover-rounded td {
+    transition: background-color 0.25s ease;
+  }
+  tr.hover-rounded:hover td {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+  }
+  tr.hover-rounded:hover td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+  }
+  tr.hover-rounded:hover td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+
+  /* ---------- AI CHAT BUBBLES (LIQUID GLASS) ---------- */
+  .chat-bubble-user {
+    color: #ffffff;
+    background: 
+      radial-gradient(circle at 25% 18%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 32%),
+      linear-gradient(180deg, #0071e3 0%, #0066cc 100%);
+    box-shadow: 
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.45), 
+      0 4px 12px rgba(0, 113, 227, 0.15);
+    border: 1px solid rgba(0, 113, 227, 0.2);
+  }
+  .chat-bubble-assistant {
+    color: var(--text);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.6) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.95), 
+      0 4px 12px rgba(0, 0, 0, 0.02);
   }
 }
 

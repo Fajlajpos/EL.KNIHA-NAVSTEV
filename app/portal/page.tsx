@@ -944,117 +944,119 @@ export default function PortalPage() {
       )}
 
       {/* Floating Chatbot Widget */}
-      <div className="fixed bottom-6 right-6 z-50 font-sans">
-        {isChatOpen ? (
-          <div className="bg-white/95 backdrop-blur-md w-80 sm:w-96 h-[500px] rounded-2xl border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
-            {/* Header */}
-            <div className="bg-white/95 px-4 py-3 border-b border-black/[0.06] text-[#1d1d1f] flex items-center justify-between shadow-sm">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-[#0071e3] animate-pulse" />
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">CHECKNI TO AI</h4>
-                  <span className="text-[9px] text-[#6e6e73] font-semibold block">Online asistent docházky</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsChatOpen(false)}
-                className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] p-1 rounded-lg transition-colors"
-                aria-label="Zavřít chat"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Messages Viewport */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/[0.04]">
-              {chatMessages.map((msg, index) => {
-                const isUser = msg.role === "user";
-                return (
-                  <div 
-                    key={index}
-                    className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-                  >
-                    <div 
-                      className={`px-3 py-2 rounded-2xl text-[11px] shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
-                        isUser 
-                          ? "bg-[#0071e3] text-white rounded-tr-none animate-in fade-in duration-200" 
-                          : "bg-white border border-black/[0.08] text-[#1d1d1f] rounded-tl-none animate-in fade-in duration-200"
-                      }`}
-                    >
-                      {isUser ? msg.content : renderMarkdown(msg.content)}
-                    </div>
+      {loggedInRole !== "CEO" && (
+        <div className="fixed bottom-6 right-6 z-50 font-sans">
+          {isChatOpen ? (
+            <div className="glass-liquid w-80 sm:w-96 h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+              {/* Header */}
+              <div className="bg-white/50 px-4 py-3.5 border-b border-white/60 text-[#1d1d1f] flex items-center justify-between shadow-sm relative z-10">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-[#0071e3] animate-pulse" />
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-[#1d1d1f]">CHECKNI TO AI</h4>
+                    <span className="text-[9px] text-[#6e6e73] font-semibold block">Online asistent docházky</span>
                   </div>
-                );
-              })}
-              
-              {isChatLoading && (
-                <div className="flex items-center gap-2 text-[#86868b] bg-white border border-black/5 px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6e6e73]" />
-                  <span>AI píše...</span>
                 </div>
-              )}
-
-              {chatError && (
-                <div className="bg-rose-500/15 border border-rose-500/30 text-rose-700 px-3 py-2 rounded-xl text-[10px] font-bold leading-normal">
-                  Chyba: {chatError}
-                </div>
-              )}
-
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Quick Prompts Panel */}
-            <div className="px-3 py-2 border-t border-black/5 bg-white flex flex-wrap gap-1.5 shrink-0 select-none">
-              {[
-                "Do kolika dnes musím být v práci?",
-                "Kolik mám přesčasů?",
-                "Kdy mám další směnu?"
-              ].map((promptText) => (
-                <button
-                  key={promptText}
-                  type="button"
-                  disabled={isChatLoading}
-                  onClick={() => handleSendChatMessage(promptText)}
-                  className="bg-black/[0.02] hover:bg-black/[0.05] border border-black/[0.06] text-[#6e6e73] hover:text-[#1d1d1f] font-bold px-2.5 py-1 rounded-full text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                <button 
+                  onClick={() => setIsChatOpen(false)}
+                  className="text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] p-1 rounded-lg transition-colors"
+                  aria-label="Zavřít chat"
                 >
-                  {promptText}
+                  <X className="h-4 w-4" />
                 </button>
-              ))}
-            </div>
+              </div>
 
-            {/* Input Form */}
-            <form 
-              onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }}
-              className="p-3 border-t border-black/[0.08] bg-white flex gap-2 items-center shrink-0"
-            >
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                disabled={isChatLoading}
-                placeholder="Zeptejte se asistenta..."
-                className="flex-1 px-3 py-2 bg-black/[0.02] border border-black/[0.06] rounded-xl text-[11px] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
-              />
-              <button
-                type="submit"
-                disabled={isChatLoading || !chatInput.trim()}
-                className="bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white p-2.5 rounded-full transition-all active:scale-[0.96] flex items-center justify-center shrink-0"
+              {/* Messages Viewport */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/[0.02]">
+                {chatMessages.map((msg, index) => {
+                  const isUser = msg.role === "user";
+                  return (
+                    <div 
+                      key={index}
+                      className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+                    >
+                      <div 
+                        className={`px-3 py-2 rounded-2xl text-[11px] shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
+                          isUser 
+                            ? "chat-bubble-user rounded-tr-none animate-in fade-in duration-200" 
+                            : "chat-bubble-assistant rounded-tl-none animate-in fade-in duration-200"
+                        }`}
+                      >
+                        {isUser ? msg.content : renderMarkdown(msg.content)}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {isChatLoading && (
+                  <div className="flex items-center gap-2 text-[#86868b] chat-bubble-assistant px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6e6e73]" />
+                    <span>AI píše...</span>
+                  </div>
+                )}
+
+                {chatError && (
+                  <div className="bg-rose-500/15 border border-rose-500/30 text-rose-700 px-3 py-2 rounded-xl text-[10px] font-bold leading-normal">
+                    Chyba: {chatError}
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Quick Prompts Panel */}
+              <div className="px-3 py-2 border-t border-white/40 bg-white/20 flex flex-wrap gap-1.5 shrink-0 select-none backdrop-blur-md">
+                {[
+                  "Do kolika dnes musím být v práci?",
+                  "Kolik mám přesčasů?",
+                  "Kdy mám další směnu?"
+                ].map((promptText) => (
+                  <button
+                    key={promptText}
+                    type="button"
+                    disabled={isChatLoading}
+                    onClick={() => handleSendChatMessage(promptText)}
+                    className="bg-white/60 hover:bg-white/80 border border-white/80 text-[#6e6e73] hover:text-[#1d1d1f] font-bold px-2.5 py-1 rounded-full text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                  >
+                    {promptText}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Form */}
+              <form 
+                onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }}
+                className="p-3 border-t border-white/40 bg-white/30 flex gap-2 items-center shrink-0 backdrop-blur-md"
               >
-                <Send className="h-3.5 w-3.5" />
-              </button>
-            </form>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="glass-liquid text-[#1d1d1f] rounded-full p-4 hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 font-bold text-xs uppercase tracking-wider z-50 relative group"
-          >
-            <Bot className="h-5 w-5 animate-pulse" />
-            <span>AI Asistent</span>
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-rose-500 rounded-full border-2 border-white animate-bounce"></span>
-          </button>
-        )}
-      </div>
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={isChatLoading}
+                  placeholder="Zeptejte se asistenta..."
+                  className="flex-1 px-3 py-2 bg-white/60 border border-white/80 rounded-xl text-[11px] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
+                />
+                <button
+                  type="submit"
+                  disabled={isChatLoading || !chatInput.trim()}
+                  className="bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white p-2.5 rounded-xl transition-all active:scale-[0.96] flex items-center justify-center shrink-0"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
+              </form>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="glass-liquid text-[#1d1d1f] rounded-full p-4 hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 font-bold text-xs uppercase tracking-wider z-50 relative group"
+            >
+              <Bot className="h-5 w-5 animate-pulse" />
+              <span>AI Asistent</span>
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-rose-500 rounded-full border-2 border-white animate-bounce"></span>
+            </button>
+          )}
+        </div>
+      )}
 
     </div>
   );

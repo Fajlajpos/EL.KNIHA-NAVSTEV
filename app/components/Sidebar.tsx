@@ -88,7 +88,11 @@ export default function Sidebar({
         <div className="flex items-center justify-between px-6 h-20 shrink-0">
           <Link href={userRole === "EMPLOYEE" ? "/portal" : "/"} className="flex items-center gap-2.5" onClick={onClose}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain" />
+            <div className="logo-liquid-glass-container h-8">
+              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain relative z-10" />
+              <div className="logo-liquid-glass-sheen" />
+              <div className="logo-liquid-glass-highlight" />
+            </div>
             <span className="text-base font-bold tracking-tight text-[#1d1d1f]">
               Checkni<span className="text-[#86868b]">.to</span>
             </span>
