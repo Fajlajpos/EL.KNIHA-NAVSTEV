@@ -1,21 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-interface UserCredential {
-  username: string;
-  password: string;
-  displayName: string;
-  role: string;
-  employeeNumber: string;
-}
-
-function getUsers(): UserCredential[] {
-  try {
-    const raw = process.env.USERS_CREDENTIALS || "[]";
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
+import { readUsers } from "@/lib/credentials";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const users = getUsers();
+    const users = readUsers();
     const user = users.find(
       (u) => u.username.toLowerCase() === username.toLowerCase() && u.password === password
     );

@@ -2,32 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { Role } from "@prisma/client";
+import { readUsers } from "@/lib/credentials";
 
 function hashPin(pin: string): string {
   return crypto.createHash("sha256").update(pin).digest("hex");
-}
-
-interface EnvUser {
-  username: string;
-  password: string;
-  displayName: string;
-  role: string;
-  employeeNumber: string;
-  firstName?: string;
-  lastName?: string;
-  department?: string;
-  email?: string;
-  pin?: string;
-  hourlyFund?: number;
-}
-
-function getEnvUsers(): EnvUser[] {
-  try {
-    const raw = process.env.USERS_CREDENTIALS || "[]";
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
 }
 
 export async function GET() {
@@ -43,7 +21,7 @@ export async function GET() {
     // Auto-sync: if DB is empty, seed from .env credentials
     if (users.length === 0) {
       console.log("Syncing employees from .env to database...");
-      const envUsers = getEnvUsers();
+      const envUsers = readUsers();
 
       for (const u of envUsers) {
         // Parse name from displayName if firstName/lastName not provided

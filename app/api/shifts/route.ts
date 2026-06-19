@@ -137,6 +137,55 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { id, date, startTime, endTime, note } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Chybí ID směny k úpravě." }, { status: 400 });
+    }
+
+    const shiftId = parseInt(id, 10);
+    if (isNaN(shiftId)) {
+      return NextResponse.json({ error: "Neplatné ID směny." }, { status: 400 });
+    }
+
+    // Validate time format (HH:MM) when provided
+    const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (startTime !== undefined && !timeRegex.test(startTime)) {
+      return NextResponse.json({ error: "Neplatný formát začátku směny (očekává se HH:MM)." }, { status: 400 });
+    }
+    if (endTime !== undefined && !timeRegex.test(endTime)) {
+      return NextResponse.json({ error: "Neplatný formát konce směny (očekává se HH:MM)." }, { status: 400 });
+    }
+    if (startTime !== undefined && endTime !== undefined && startTime === endTime) {
+      return NextResponse.json({ error: "Začátek a konec směny nesmí být shodné." }, { status: 400 });
+    }
+
+    // Build partial update so only provided fields are changed
+    const data: { date?: Date; startTime?: string; endTime?: string; note?: string | null } = {};
+    if (date !== undefined) data.date = new Date(date);
+    if (startTime !== undefined) data.startTime = startTime;
+    if (endTime !== undefined) data.endTime = endTime;
+    if (note !== undefined) data.note = note?.trim() || null;
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "Nebyly předány žádné změny." }, { status: 400 });
+    }
+
+    const updatedShift = await prisma.shift.update({
+      where: { id: shiftId },
+      data,
+    });
+
+    return NextResponse.json(updatedShift);
+  } catch (err) {
+    console.error("Error in PATCH /api/shifts:", err);
+    return NextResponse.json({ error: "Nepodařilo se upravit směnu." }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

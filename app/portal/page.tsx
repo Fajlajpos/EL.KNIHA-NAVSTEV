@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Calendar,
   AlertTriangle,
@@ -57,7 +56,6 @@ interface CorrectionRequest {
 }
 
 export default function PortalPage() {
-  const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [activeEmployee, setActiveEmployee] = useState<Employee | null>(null);
@@ -85,9 +83,9 @@ export default function PortalPage() {
       setLoggedInRole(role);
       setLoggedInEmployeeNumber(empNum || null);
     } else {
-      router.push("/login?redirect=/portal");
+      window.location.replace("/login?redirect=/portal");
     }
-  }, [router]);
+  }, []);
 
   // Form State
   const [requestMode, setRequestMode] = useState<"new" | "edit">("new");

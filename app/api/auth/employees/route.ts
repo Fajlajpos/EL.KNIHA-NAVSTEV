@@ -1,62 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { Role } from "@prisma/client";
-
-interface UserCredential {
-  username: string;
-  password: string;
-  displayName: string;
-  role: string;
-  employeeNumber: string;
-  firstName?: string;
-  lastName?: string;
-  department?: string;
-  email?: string;
-  pin?: string;
-  hourlyFund?: number;
-}
+import { readUsers, writeUsers, type UserCredential } from "@/lib/credentials";
 
 function hashPin(pin: string): string {
   return crypto.createHash("sha256").update(pin).digest("hex");
 }
 
-function getEnvPath(): string {
-  return path.resolve(process.cwd(), ".env");
-}
-
+// Cteni i zapis prihlasovacich udaju resi sdileny modul lib/credentials.
 function getUsers(): UserCredential[] {
-  try {
-    const raw = process.env.USERS_CREDENTIALS || "[]";
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
+  return readUsers();
 }
 
 function saveUsersToEnv(users: UserCredential[]): void {
-  const envPath = getEnvPath();
-  let envContent = fs.readFileSync(envPath, "utf-8");
-
-  const jsonStr = JSON.stringify(users);
-  const newLine = `USERS_CREDENTIALS='${jsonStr}'`;
-
-  if (envContent.includes("USERS_CREDENTIALS=")) {
-    envContent = envContent.replace(/USERS_CREDENTIALS=.*/g, newLine);
-  } else {
-    envContent += `\n${newLine}\n`;
-  }
-
-  fs.writeFileSync(envPath, envContent, "utf-8");
-  process.env.USERS_CREDENTIALS = jsonStr;
+  writeUsers(users);
 }
 
-// GET - list all employees (without passwords)
-export async function GET() {
+// GET - list all employees (without passwords).
+// With ?username=X returns the FULL credential (incl. password) of one employee,
+// used by the CEO's "Správa zaměstnanců" detail view.
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const username = searchParams.get("username");
     const users = getUsers();
+
+    if (username) {
+      const user = users.find(
+        (u) => u.username.toLowerCase() === username.toLowerCase()
+      );
+      if (!user) {
+        return NextResponse.json(
+          { error: "Zaměstnanec nebyl nalezen." },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(user);
+    }
+
     const safeUsers = users.map(({ password, ...rest }) => rest);
     return NextResponse.json(safeUsers);
   } catch (error) {
@@ -191,18 +173,18 @@ export async function DELETE(req: NextRequest) {
     // 1. Remove from .env
     saveUsersToEnv(filtered);
 
-    // 2. Deactivate in DB (set isActive = false) instead of hard delete to preserve history
+    // 2. Hard delete from DB (table "zamestnanci"). Related records
+    //    (attendance logs, absences, corrections, shifts) cascade via schema.
     const dbUser = await prisma.user.findUnique({
       where: { employeeNumber: userToRemove.employeeNumber },
     });
     if (dbUser) {
-      await prisma.user.update({
+      await prisma.user.delete({
         where: { id: dbUser.id },
-        data: { isActive: false },
       });
     }
 
-    return NextResponse.json({ success: true, message: "Zaměstnanec byl odebrán z .env a deaktivován v databázi." });
+    return NextResponse.json({ success: true, message: "Zaměstnanec byl odebrán z .env i z databáze." });
   } catch (error) {
     console.error("Error in DELETE /api/auth/employees:", error);
     return NextResponse.json({ error: "Chyba při odebírání zaměstnance." }, { status: 500 });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import {
   Key,
   Users,
@@ -33,7 +32,6 @@ interface AttendanceLog {
 }
 
 export default function KioskPage() {
-  const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   // Auth Verification
@@ -49,11 +47,11 @@ export default function KioskPage() {
     if (role === "CEO") {
       setIsAuthorized(true);
     } else if (role === "EMPLOYEE") {
-      router.push("/portal");
+      window.location.replace("/portal");
     } else {
-      router.push("/login?redirect=/kiosk");
+      window.location.replace("/login?redirect=/kiosk");
     }
-  }, [router]);
+  }, []);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [departments, setDepartments] = useState<string[]>([]);

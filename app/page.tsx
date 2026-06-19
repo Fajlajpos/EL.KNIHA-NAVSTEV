@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { 
   Camera, 
   Loader2, 
@@ -156,7 +155,6 @@ const preprocessImage = (img: HTMLImageElement): HTMLCanvasElement => {
 };
 
 export default function Home() {
-  const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   // Auth Verification
@@ -172,11 +170,11 @@ export default function Home() {
     if (role === "CEO") {
       setIsAuthorized(true);
     } else if (role === "EMPLOYEE") {
-      router.push("/portal");
+      window.location.replace("/portal");
     } else {
-      router.push("/login?redirect=/");
+      window.location.replace("/login?redirect=/");
     }
-  }, [router]);
+  }, []);
 
   // Form state
   const [jmeno, setJmeno] = useState("");
