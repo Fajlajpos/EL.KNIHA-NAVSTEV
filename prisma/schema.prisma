@@ -20,3 +20,134 @@ model Visit {
 
   @@map("navstevy")
 }
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  CEO
+  ADMIN
+}
+
+enum LogType {
+  WORK
+  LUNCH
+  DOCTOR
+  BUSINESS_TRIP
+  BREAK
+}
+
+enum AttendanceStatus {
+  OK
+  OPEN
+  ERROR
+  MANUALLY_EDITED
+}
+
+enum AbsenceType {
+  VACATION
+  SICK_LEAVE
+  COMPENSATORY_LEAVE
+}
+
+enum AbsenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CorrectionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id               Int                 @id @default(autoincrement())
+  employeeNumber   String              @unique @map("employee_number")
+  firstName        String              @map("first_name")
+  lastName         String              @map("last_name")
+  email            String?             @unique
+  department       String              // "Vyroba", "Sklad", "THP", "Management"
+  role             Role                @default(EMPLOYEE)
+  pinHash          String?             @map("pin_hash")
+  rfidCardUid      String?             @unique @map("rfid_card_uid")
+  hourlyFund       Float               @default(40.0) @map("hourly_fund") // weekly fund hours
+  createdAt        DateTime            @default(now()) @map("created_at")
+  isActive         Boolean             @default(true) @map("is_active")
+  
+  attendanceLogs   AttendanceLog[]     @relation("UserAttendance")
+  editedLogs       AttendanceLog[]     @relation("EditedByAttendance")
+  absences         Absence[]
+  approvedAbsences Absence[]           @relation("ApprovedByAbsence")
+  corrections      CorrectionRequest[] @relation("UserCorrection")
+  approvedCorrections CorrectionRequest[] @relation("ApprovedByCorrection")
+  shifts           Shift[]             @relation("UserShifts")
+
+  @@map("users")
+}
+
+model AttendanceLog {
+  id               Int              @id @default(autoincrement())
+  userId           Int              @map("user_id")
+  checkIn          DateTime         @map("check_in") @db.Timestamptz
+  checkOut         DateTime?        @map("check_out") @db.Timestamptz
+  logType          LogType          @default(WORK) @map("log_type")
+  status           AttendanceStatus @default(OPEN)
+  editedById       Int?             @map("edited_by")
+  note             String?          
+  originalCheckIn  DateTime?        @map("original_check_in") @db.Timestamptz
+  originalCheckOut DateTime?        @map("original_check_out") @db.Timestamptz
+  
+  user             User             @relation("UserAttendance", fields: [userId], references: [id], onDelete: Cascade)
+  editedBy         User?            @relation("EditedByAttendance", fields: [editedById], references: [id])
+  corrections      CorrectionRequest[]
+
+  @@map("attendance_logs")
+}
+
+model Absence {
+  id           Int           @id @default(autoincrement())
+  userId       Int           @map("user_id")
+  startDate    DateTime      @map("start_date") @db.Date
+  endDate      DateTime      @map("end_date") @db.Date
+  absenceType  AbsenceType   @map("absence_type")
+  approvedById Int?          @map("approved_by")
+  status       AbsenceStatus @default(PENDING)
+  
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approvedBy   User?         @relation("ApprovedByAbsence", fields: [approvedById], references: [id])
+
+  @@map("absences")
+}
+
+model CorrectionRequest {
+  id                Int              @id @default(autoincrement())
+  userId            Int              @map("user_id")
+  attendanceLogId   Int?             @map("attendance_log_id")
+  requestedCheckIn  DateTime?        @map("requested_check_in") @db.Timestamptz
+  requestedCheckOut DateTime?        @map("requested_check_out") @db.Timestamptz
+  requestedLogType  LogType          @default(WORK) @map("requested_log_type")
+  reason            String           
+  status            CorrectionStatus @default(PENDING)
+  approvedById      Int?             @map("approved_by")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  
+  user              User              @relation("UserCorrection", fields: [userId], references: [id], onDelete: Cascade)
+  attendanceLog     AttendanceLog?    @relation(fields: [attendanceLogId], references: [id], onDelete: Cascade)
+  approvedBy        User?             @relation("ApprovedByCorrection", fields: [approvedById], references: [id])
+
+  @@map("correction_requests")
+}
+
+model Shift {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  date      DateTime @db.Date
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  note      String?
+
+  user      User     @relation("UserShifts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shifts")
+}

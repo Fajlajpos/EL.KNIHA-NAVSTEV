@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Camera, 
   Loader2, 
@@ -155,6 +156,28 @@ const preprocessImage = (img: HTMLImageElement): HTMLCanvasElement => {
 };
 
 export default function Home() {
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Auth Verification
+  useEffect(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return null;
+    };
+
+    const role = getCookie("userRole") || sessionStorage.getItem("userRole");
+    if (role === "CEO") {
+      setIsAuthorized(true);
+    } else if (role === "EMPLOYEE") {
+      router.push("/portal");
+    } else {
+      router.push("/login?redirect=/");
+    }
+  }, [router]);
+
   // Form state
   const [jmeno, setJmeno] = useState("");
   const [prijmeni, setPrijmeni] = useState("");
@@ -212,8 +235,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchVisits();
-  }, []);
+    if (isAuthorized) {
+      fetchVisits();
+    }
+  }, [isAuthorized]);
 
   // Auto-dismiss alert notifications
   useEffect(() => {
@@ -453,11 +478,20 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500 font-sans text-xs uppercase tracking-widest gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+        <span>Ověřování přístupu...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#faf9f6] text-slate-900 pb-16 font-sans antialiased selection:bg-indigo-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16 font-sans antialiased selection:bg-indigo-100">
       
       {/* Visual Header */}
-      <header className="bg-white border-b border-slate-200/80 px-6 py-5 sticky top-0 z-40">
+      <header className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-40 shadow-sm">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           
           {/* Logo Brand */}
@@ -465,35 +499,35 @@ export default function Home() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="CHECKNI TO" className="h-9 w-auto object-contain" />
             <div className="hidden sm:block border-l border-slate-200 pl-3">
-              <h1 className="text-sm font-bold tracking-wider text-slate-900">CHECKNI TO</h1>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Logbook terminal</p>
+              <h1 className="text-sm font-black tracking-wider text-indigo-600">CHECKNI TO</h1>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kniha návštěv</p>
             </div>
           </div>
 
           {/* Minimalist Summary Tickers & Clock */}
           <div className="flex flex-wrap items-center gap-5 md:gap-8">
             {/* Live digital status tickers */}
-            <div className="text-[11px] font-mono text-slate-500 uppercase flex items-center gap-4 bg-slate-50 border border-slate-200/50 rounded-lg px-3 py-1.5">
+            <div className="text-[11px] font-mono text-slate-600 uppercase flex items-center gap-4 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
               <span>V budově: <strong className="text-emerald-600 font-bold">{activeCount}</strong></span>
-              <span className="text-slate-300">|</span>
+              <span className="text-slate-200">|</span>
               <span>Dnes: <strong className="text-slate-800 font-bold">{totalCount}</strong></span>
-              <span className="text-slate-300">|</span>
+              <span className="text-slate-200">|</span>
               <span>Odešli: <strong className="text-slate-400 font-bold">{checkedOutCount}</strong></span>
             </div>
 
             {/* Typewriter clock */}
             <div className="text-right font-mono border-l border-slate-200 pl-4 hidden sm:block">
-              <span className="text-xs font-bold text-slate-900 block tracking-tight">{time || "00:00:00"}</span>
-              <span className="text-[9px] text-slate-400 block">{dateStr || "ZAVÁDĚNÍ"}</span>
+              <span className="text-xs font-bold text-slate-800 block tracking-tight">{time || "00:00:00"}</span>
+              <span className="text-[9px] text-slate-400 block uppercase font-semibold">{dateStr || "ZAVÁDĚNÍ"}</span>
             </div>
 
             <button 
               onClick={fetchVisits} 
               disabled={isLoadingVisits}
-              className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors disabled:opacity-50"
+              className="p-2 text-slate-400 hover:text-slate-650 bg-white border border-slate-200 rounded-xl transition-all disabled:opacity-50"
               title="Obnovit data"
             >
-              <RefreshCw className={`h-4 w-4 ${isLoadingVisits ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoadingVisits ? "animate-spin" : ""}`} />
             </button>
           </div>
 
@@ -505,16 +539,16 @@ export default function Home() {
         
         {/* Global Notifications */}
         {successMsg && (
-          <div className="mb-6 p-3.5 rounded-lg bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-            <span className="font-medium">{successMsg}</span>
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+            <span className="font-semibold">{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="mb-6 p-3.5 rounded-lg bg-rose-50 border border-rose-200/60 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
-            <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
-            <span className="font-medium">{errorMsg}</span>
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
+            <span className="font-semibold">{errorMsg}</span>
           </div>
         )}
 
@@ -523,32 +557,32 @@ export default function Home() {
           
           {/* LEFT: Index Card check-in registration */}
           <div className="lg:col-span-5">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
               {/* Paper line indicator top decoration */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-900"></div>
+              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500"></div>
               
-              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">
+              <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">
                 Karta příchodu
               </h2>
 
               {/* Physical tray dropzone design */}
-              <div className="border border-slate-200 rounded-xl p-4.5 text-center mb-6 bg-slate-50/50">
+              <div className="border border-slate-200 rounded-2xl p-5 text-center mb-6 bg-slate-50">
                 {isScanning ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-4">
-                    <div className="loader-spin text-slate-900"></div>
-                    <span className="text-[11px] font-mono text-slate-600 uppercase tracking-wider">
+                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
+                    <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider">
                       Vytěžuji doklad... {scanProgress}%
                     </span>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
                       Položte doklad (OP, pas) před objektiv a stiskněte tlačítko pro vyčtení údajů.
                     </p>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2 px-4 rounded-lg text-xs shadow-sm transition-all w-full active:scale-[0.99]"
+                      className="inline-flex items-center justify-center gap-2 bg-indigo-650 hover:bg-indigo-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition-all w-full active:scale-[0.99]"
                     >
                       <Camera className="h-3.5 w-3.5" />
                       Vyfotit / Skenovat doklad
@@ -570,7 +604,7 @@ export default function Home() {
               <form onSubmit={handleSaveVisit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
                       Jméno
                     </label>
                     <input
@@ -579,11 +613,11 @@ export default function Home() {
                       value={jmeno}
                       onChange={(e) => setJmeno(e.target.value)}
                       placeholder="Jan"
-                      className="mt-1.5 block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm placeholder-slate-300 focus:outline-none focus:border-slate-800 text-slate-950 font-medium"
+                      className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
                       Příjmení
                     </label>
                     <input
@@ -592,13 +626,13 @@ export default function Home() {
                       value={prijmeni}
                       onChange={(e) => setPrijmeni(e.target.value)}
                       placeholder="Novák"
-                      className="mt-1.5 block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm placeholder-slate-300 focus:outline-none focus:border-slate-800 text-slate-950 font-medium"
+                      className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-widest">
                     Název firmy / Organizace
                   </label>
                   <input
@@ -606,12 +640,12 @@ export default function Home() {
                     value={organizace}
                     onChange={(e) => setOrganizace(e.target.value)}
                     placeholder="Např. Google (nepovinné)"
-                    className="mt-1.5 block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm placeholder-slate-300 focus:outline-none focus:border-slate-800 text-slate-950 font-medium"
+                    className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
                     Státní poznávací značka (SPZ)
                   </label>
                   <input
@@ -619,18 +653,18 @@ export default function Home() {
                     value={spz}
                     onChange={(e) => setSpz(e.target.value)}
                     placeholder="Např. 1AB 2345 (nepovinné)"
-                    className="mt-1.5 block w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm placeholder-slate-300 focus:outline-none focus:border-slate-800 text-slate-950 font-mono font-bold uppercase"
+                    className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-mono font-bold uppercase"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSaving || isScanning}
-                  className="w-full bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white py-3 px-4 rounded-lg text-xs font-bold uppercase tracking-widest shadow-sm transition-all mt-2 disabled:opacity-50 active:scale-[0.99]"
+                  className="w-full bg-indigo-650 hover:bg-indigo-600 text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-all mt-2 disabled:opacity-50 active:scale-[0.99]"
                 >
                   {isSaving ? (
                     <span className="flex items-center justify-center gap-1.5">
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       Zapisuji příchod...
                     </span>
                   ) : (
@@ -640,8 +674,8 @@ export default function Home() {
               </form>
 
               {/* GDPR Legal Safeguard footer */}
-              <div className="mt-5 pt-4 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-center gap-1.5 font-medium leading-relaxed text-center">
-                <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+              <div className="mt-5 pt-4 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-center gap-1.5 font-bold leading-relaxed text-center">
+                <Check className="h-3.5 w-3.5 text-emerald-550 shrink-0" />
                 Fotky ihned odstraňujeme. Neukládáme žádné kopie dokladů.
               </div>
 
@@ -650,14 +684,14 @@ export default function Home() {
 
           {/* RIGHT: Visitor logbook grid */}
           <div className="lg:col-span-7">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-slate-900"></div>
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500"></div>
               
               {/* Controls Bar */}
               <div className="space-y-4 mb-6">
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest">
                     Logbook návštěv
                   </h2>
                   
@@ -665,7 +699,7 @@ export default function Home() {
                   <button
                     onClick={exportToCSV}
                     disabled={filteredVisits.length === 0}
-                    className="inline-flex items-center justify-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 py-1.5 px-3 rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50 self-start sm:self-auto"
+                    className="inline-flex items-center justify-center gap-1.5 border border-slate-205 hover:bg-slate-50 text-slate-600 py-1.5 px-3 rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 self-start sm:self-auto"
                     title="Uložit list do CSV souboru"
                   >
                     <Download className="h-3.5 w-3.5 text-slate-500" />
@@ -675,51 +709,51 @@ export default function Home() {
 
                 {/* Search query box */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 top-3.5 h-3.5 w-3.5 text-slate-400" />
                   <input
                     type="text"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     placeholder="Hledat podle jména, firmy nebo SPZ..."
-                    className="block w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-800 text-slate-900"
+                    className="block w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-800"
                   />
                 </div>
 
                 {/* GitHub/Linear style Underline Tabs */}
-                <div className="flex gap-5 border-b border-slate-100 pb-1">
+                <div className="flex gap-5 border-b border-slate-150 pb-1">
                   <button
                     onClick={() => setFilter("all")}
                     className={`py-1 text-xs font-bold transition-all relative ${
                       filter === "all"
-                        ? "text-slate-900"
-                        : "text-slate-400 hover:text-slate-600"
+                        ? "text-indigo-600"
+                        : "text-slate-450 hover:text-slate-700"
                     }`}
                   >
                     Všichni ({totalCount})
-                    {filter === "all" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-slate-900"></span>}
+                    {filter === "all" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
                   <button
                     onClick={() => setFilter("active")}
                     className={`py-1 text-xs font-bold transition-all relative flex items-center gap-1 ${
                       filter === "active"
-                        ? "text-slate-900"
-                        : "text-slate-400 hover:text-slate-600"
+                        ? "text-indigo-600"
+                        : "text-slate-450 hover:text-slate-700"
                     }`}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                     V budově ({activeCount})
-                    {filter === "active" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-slate-900"></span>}
+                    {filter === "active" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
                   <button
                     onClick={() => setFilter("completed")}
                     className={`py-1 text-xs font-bold transition-all relative ${
                       filter === "completed"
-                        ? "text-slate-900"
-                        : "text-slate-400 hover:text-slate-600"
+                        ? "text-indigo-600"
+                        : "text-slate-455 hover:text-slate-700"
                     }`}
                   >
                     Odešli ({checkedOutCount})
-                    {filter === "completed" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-slate-900"></span>}
+                    {filter === "completed" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
                 </div>
 
@@ -734,13 +768,13 @@ export default function Home() {
                         <div className="h-4 bg-slate-100 rounded w-1/2"></div>
                         <div className="h-3 bg-slate-100 rounded w-1/3"></div>
                       </div>
-                      <div className="h-8 bg-slate-100 rounded w-16"></div>
+                      <div className="h-8 bg-slate-105 rounded w-16"></div>
                     </div>
                   ))}
                 </div>
               ) : filteredVisits.length === 0 ? (
-                <div className="py-16 text-center text-slate-400 bg-slate-50 border border-slate-200/50 rounded-lg">
-                  <p className="font-semibold text-xs uppercase tracking-wider text-slate-400">Žádné záznamy</p>
+                <div className="py-16 text-center text-slate-400 bg-slate-50 border border-slate-150 rounded-xl">
+                  <p className="font-bold text-xs uppercase tracking-wider text-slate-400">Žádné záznamy</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
@@ -754,11 +788,11 @@ export default function Home() {
                         <div className="space-y-1.5 min-w-0">
                           {/* Name / Organization */}
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-sm">
+                            <span className="font-bold text-slate-800 text-sm">
                               {visit.prijmeni} {visit.jmeno}
                             </span>
                             {visit.organizace && (
-                              <span className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-semibold text-[10px]">
+                              <span className="flex items-center gap-1 bg-slate-50 border border-slate-205 px-2 py-0.5 rounded text-slate-600 font-bold text-[10px]">
                                 <Building2 className="h-2.5 w-2.5 text-slate-400" />
                                 {visit.organizace}
                               </span>
@@ -769,7 +803,7 @@ export default function Home() {
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500 font-mono">
                             
                             {/* Time details */}
-                            <span className="flex items-center gap-1 bg-slate-100/60 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-bold text-slate-600">
+                            <span className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-bold text-slate-650">
                               <Clock className="h-3 w-3 text-slate-400" />
                               <span>{formatCzechTime(visit.cas_prichodu)}</span>
                               {!isActive && visit.cas_odchodu && (
@@ -781,13 +815,13 @@ export default function Home() {
                             </span>
 
                             {/* Duration details */}
-                            <span className="text-[11px] text-indigo-700 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
+                            <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
                               Doba: {getElapsedTime(visit.cas_prichodu, visit.cas_odchodu)}
                             </span>
 
                             {/* Vehicle plate details */}
                             {visit.spz && (
-                              <span className="flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">
+                              <span className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px] text-slate-600">
                                 <Car className="h-3 w-3 text-slate-400" />
                                 {visit.spz}
                               </span>
@@ -802,7 +836,7 @@ export default function Home() {
                             <button
                               onClick={() => handleCheckout(visit.id, `${visit.jmeno} ${visit.prijmeni}`)}
                               disabled={isCheckingOut === visit.id}
-                              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200/60 font-bold py-1.5 px-3.5 rounded-lg text-xs shadow-sm transition-all active:scale-[0.98]"
+                              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold py-1.5 px-3.5 rounded-lg text-xs shadow-sm transition-all active:scale-[0.98] disabled:opacity-50"
                             >
                               {isCheckingOut === visit.id ? (
                                 <>
