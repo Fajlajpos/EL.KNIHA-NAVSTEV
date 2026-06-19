@@ -1,0 +1,22 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Visit {
+  id           Int       @id @default(autoincrement())
+  jmeno        String
+  prijmeni     String
+  organizace   String?
+  spz          String?
+  cas_prichodu DateTime  @default(now()) @map("prichod") @db.Timestamptz
+  cas_odchodu  DateTime? @map("odchod") @db.Timestamptz
+
+  @@map("navstevy")
+}
