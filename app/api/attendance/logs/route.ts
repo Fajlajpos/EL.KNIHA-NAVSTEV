@@ -1,13 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const userIdStr = searchParams.get("userId");
     const monthStr = searchParams.get("month"); // Format: YYYY-MM
+
+    // Běžný zaměstnanec smí číst jen své vlastní záznamy
+    if (session.role === "EMPLOYEE") {
+      let sessionDbId = session.dbId;
+      if (!sessionDbId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { employeeNumber: session.employeeNumber },
+        });
+        sessionDbId = dbUser?.id || null;
+      }
+
+      if (!userIdStr || parseInt(userIdStr, 10) !== sessionDbId) {
+        return NextResponse.json(
+          { error: "Nemáte oprávnění prohlížet docházku jiných uživatelů." },
+          { status: 403 }
+        );
+      }
+    }
 
     const whereClause: { userId?: number; checkIn?: { gte: Date; lt: Date } } = {};
 
@@ -54,6 +78,14 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO" && session.role !== "MANAGER") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO a MANAGER." }, { status: 403 });
+    }
+
     const body = await req.json();
     const { logId, checkIn, checkOut, logType, status, note, editedById } = body;
 

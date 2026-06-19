@@ -23,7 +23,12 @@ export default function Navbar() {
     setDisplayName(name ? decodeURIComponent(name) : null);
   }, [pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Chyba při odhlašování na serveru:", e);
+    }
     document.cookie = "userRole=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "userName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "userDisplayName=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";

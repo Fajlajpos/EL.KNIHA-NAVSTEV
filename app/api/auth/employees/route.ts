@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { Role } from "@prisma/client";
 import { readUsers, writeUsers, type UserCredential } from "@/lib/credentials";
+import { getSession } from "@/lib/session";
 
 function hashPin(pin: string): string {
   return crypto.createHash("sha256").update(pin).digest("hex");
@@ -22,6 +23,14 @@ function saveUsersToEnv(users: UserCredential[]): void {
 // used by the CEO's "Správa zaměstnanců" detail view.
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO." }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const username = searchParams.get("username");
     const users = getUsers();
@@ -39,7 +48,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(user);
     }
 
-    const safeUsers = users.map(({ password, ...rest }) => rest);
+    const safeUsers = users.map((u) => {
+      const copy = { ...u } as Partial<UserCredential>;
+      delete copy.password;
+      return copy;
+    });
     return NextResponse.json(safeUsers);
   } catch (error) {
     console.error("Error in GET /api/auth/employees:", error);
@@ -50,13 +63,20 @@ export async function GET(req: NextRequest) {
 // POST - add new employee (saves to .env AND creates in DB)
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO." }, { status: 403 });
+    }
+
     const body = await req.json();
     const {
       username,
       password,
       displayName,
       role,
-      employeeNumber,
       firstName,
       lastName,
       department,
@@ -65,14 +85,14 @@ export async function POST(req: NextRequest) {
       hourlyFund,
     } = body;
 
-    if (!username || !password || !displayName || !employeeNumber || !firstName || !lastName || !department) {
+    if (!username || !password || !displayName || !firstName || !lastName || !department) {
       return NextResponse.json(
         { error: "Všechna povinná pole musí být vyplněna." },
         { status: 400 }
       );
     }
 
-    // 1. Check .env duplicates
+    // 1. Check .env duplicates for username
     const users = getUsers();
 
     if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
@@ -82,20 +102,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (users.some((u) => u.employeeNumber === employeeNumber)) {
-      return NextResponse.json(
-        { error: "Zaměstnanec s tímto osobním číslem již v .env existuje." },
-        { status: 400 }
-      );
-    }
+    // 2. Generate sequential employee number based on the highest existing number in .env
+    const parsedNumbers = users
+      .map((u) => parseInt(u.employeeNumber, 10))
+      .filter((n) => !isNaN(n));
+    const nextNumber = parsedNumbers.length > 0 ? Math.max(...parsedNumbers) + 1 : 1001;
+    const employeeNumber = String(nextNumber);
 
-    // 2. Check DB duplicates
+    // 3. Check DB duplicates for the newly generated number just to be absolutely safe
     const existingDb = await prisma.user.findUnique({
-      where: { employeeNumber: employeeNumber.trim() },
+      where: { employeeNumber },
     });
     if (existingDb) {
       return NextResponse.json(
-        { error: "Zaměstnanec s tímto osobním číslem již existuje v databázi." },
+        { error: "Neočekávaná chyba: Vygenerované osobní číslo již existuje v databázi." },
         { status: 400 }
       );
     }
@@ -146,6 +166,14 @@ export async function POST(req: NextRequest) {
 // DELETE - remove employee by username (removes from .env AND deactivates in DB)
 export async function DELETE(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO." }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const username = searchParams.get("username");
 

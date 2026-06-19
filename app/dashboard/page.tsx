@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ShieldAlert,
   FileCheck,
@@ -20,7 +20,135 @@ import {
   Check,
   X,
   KeyRound,
+  Camera,
 } from "lucide-react";
+import { createWorker } from "tesseract.js";
+
+// Helper methods for offline Tesseract parsing
+const toTitleCase = (str: string) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const sanitizeName = (str: string) => {
+  return str
+    .replace(/[^A-Za-zÁ-Žá-ž\s\-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const parseMRZ = (rawText: string) => {
+  const lines = rawText.split("\n");
+  for (const line of lines) {
+    const cleaned = line.replace(/\s+/g, "").toUpperCase();
+    if (cleaned.includes("<<") && /^[A-Z0-9<]{28,32}$/.test(cleaned)) {
+      const parts = cleaned.split("<<");
+      if (parts.length >= 2) {
+        const rawPrijmeni = parts[0];
+        const rawJmeno = parts[1];
+        const cleanPrijmeni = rawPrijmeni.replace(/</g, " ").trim();
+        const cleanJmeno = rawJmeno.replace(/</g, " ").trim();
+        return {
+          prijmeni: sanitizeName(toTitleCase(cleanPrijmeni)),
+          jmeno: sanitizeName(toTitleCase(cleanJmeno))
+        };
+      }
+    }
+  }
+  return null;
+};
+
+const parseFallback = (rawText: string) => {
+  const lines = rawText.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  let jmeno = "";
+  let prijmeni = "";
+
+  const surnameKeywords = ["příjmení", "surname", "prijmeni"];
+  const givenNameKeywords = ["jméno", "given name", "jmeno", "given names"];
+
+  const surnameLabelRegex = /(?:příjmení\s*[\/\-]?\s*surname|surname\s*[\/\-]?\s*příjmení|prijmeni\s*[\/\-]?\s*surname|surname\s*[\/\-]?\s*prijmeni|příjmení|surname|prijmeni)\s*[:\/\-]?\s*/i;
+  const givenNameLabelRegex = /(?:jméno\s*[\/\-]?\s*given\s+names?|given\s+names?\s*[\/\-]?\s*jméno|jmeno\s*[\/\-]?\s*given\s+names?|given\s+names?\s*[\/\-]?\s*jmeno|jméno|given\s+names?|jmeno)\s*[:\/\-]?\s*/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineLower = lines[i].toLowerCase();
+    if (!prijmeni && surnameKeywords.some((kw) => lineLower.includes(kw))) {
+      const match = lines[i].match(surnameLabelRegex);
+      if (match) {
+        const matched = match[0];
+        const index = lines[i].indexOf(matched);
+        const value = lines[i].slice(index + matched.length).trim();
+        if (value.length > 1) {
+          prijmeni = sanitizeName(toTitleCase(value));
+        } else if (i + 1 < lines.length) {
+          const nextLineLower = lines[i + 1].toLowerCase();
+          if (!givenNameKeywords.some((kw) => nextLineLower.includes(kw))) {
+            prijmeni = sanitizeName(toTitleCase(lines[i + 1].trim()));
+          }
+        }
+      }
+    }
+    if (!jmeno && givenNameKeywords.some((kw) => lineLower.includes(kw))) {
+      const match = lines[i].match(givenNameLabelRegex);
+      if (match) {
+        const matched = match[0];
+        const index = lines[i].indexOf(matched);
+        const value = lines[i].slice(index + matched.length).trim();
+        if (value.length > 1) {
+          jmeno = sanitizeName(toTitleCase(value));
+        } else if (i + 1 < lines.length) {
+          const nextLineLower = lines[i + 1].toLowerCase();
+          if (!surnameKeywords.some((kw) => nextLineLower.includes(kw))) {
+            jmeno = sanitizeName(toTitleCase(lines[i + 1].trim()));
+          }
+        }
+      }
+    }
+  }
+  return { jmeno, prijmeni };
+};
+
+const loadImage = (file: File): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Chyba při načítání souboru."));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Chyba při čtení souboru."));
+    reader.readAsDataURL(file);
+  });
+};
+
+const preprocessImage = (img: HTMLImageElement): HTMLCanvasElement => {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+  canvas.width = img.naturalWidth || img.width;
+  canvas.height = img.naturalHeight || img.height;
+  ctx.drawImage(img, 0, 0);
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+    let contrast = (gray - 128) * 2.5 + 128;
+    if (contrast > 255) contrast = 255;
+    if (contrast < 0) contrast = 0;
+    data[i] = contrast;
+    data[i + 1] = contrast;
+    data[i + 2] = contrast;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+};
 
 interface LiveOccupant {
   id: string;
@@ -139,14 +267,18 @@ export default function DashboardPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [newEmpUsername, setNewEmpUsername] = useState("");
   const [newEmpPassword, setNewEmpPassword] = useState("");
-  const [newEmpDisplayName, setNewEmpDisplayName] = useState("");
   const [newEmpRole, setNewEmpRole] = useState("EMPLOYEE");
-  const [newEmpNumber, setNewEmpNumber] = useState("");
   const [newEmpFirstName, setNewEmpFirstName] = useState("");
   const [newEmpLastName, setNewEmpLastName] = useState("");
   const [newEmpDepartment, setNewEmpDepartment] = useState("");
   const [newEmpEmail, setNewEmpEmail] = useState("");
   const [newEmpPin, setNewEmpPin] = useState("");
+
+  // Stavy pro nahrávání občanského průkazu (OCR přes Tesseract.js)
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auth Verification
   useEffect(() => {
@@ -472,10 +604,88 @@ export default function DashboardPage() {
     };
   };
 
-  // Handle adding a new employee credential
+  // OCR zpracování souboru (OP/Pas) shodné s Kartou příchodu
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIdCardFile(file);
+    setIsScanning(true);
+    setScanProgress(0);
+    setStatusMsg(null);
+
+    let worker: Awaited<ReturnType<typeof createWorker>> | null = null;
+
+    try {
+      const img = await loadImage(file);
+      const canvas = preprocessImage(img);
+
+      // Fáze 1: Čtení MRZ (Machine Readable Zone) na zadní straně
+      worker = await createWorker("eng", 1, {
+        logger: (m) => {
+          if (m.status === "recognizing") {
+            setScanProgress(Math.round(m.progress * 50));
+          }
+        },
+      });
+
+      await worker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<",
+      });
+
+      const { data: { text: mrzText } } = await worker.recognize(canvas);
+      await worker.terminate();
+      worker = null;
+
+      const mrzData = parseMRZ(mrzText);
+      if (mrzData && (mrzData.jmeno || mrzData.prijmeni)) {
+        if (mrzData.jmeno) setNewEmpFirstName(mrzData.jmeno);
+        if (mrzData.prijmeni) setNewEmpLastName(mrzData.prijmeni);
+        setStatusMsg({ text: "Občanský průkaz načten ze zadní strany (MRZ).", error: false });
+        setScanProgress(100);
+        return;
+      }
+
+      // Fáze 2: Čtení přední strany (ces+eng)
+      worker = await createWorker("ces+eng", 1, {
+        logger: (m) => {
+          if (m.status === "recognizing") {
+            setScanProgress(50 + Math.round(m.progress * 50));
+          }
+        },
+      });
+
+      const { data: { text: fallbackText } } = await worker.recognize(canvas);
+      const fallbackData = parseFallback(fallbackText);
+
+      if (fallbackData.jmeno) setNewEmpFirstName(fallbackData.jmeno);
+      if (fallbackData.prijmeni) setNewEmpLastName(fallbackData.prijmeni);
+
+      if (fallbackData.jmeno || fallbackData.prijmeni) {
+        setStatusMsg({ text: "Občanský průkaz načten z přední strany.", error: false });
+      } else {
+        setStatusMsg({ text: "Na dokladu nebyly rozpoznány čitelné údaje. Zadejte jméno ručně.", error: true });
+      }
+      setScanProgress(100);
+    } catch (err) {
+      console.error(err);
+      setStatusMsg({ text: "Chyba při OCR zpracování. Vyplňte údaje ručně.", error: true });
+    } finally {
+      if (worker) {
+        await worker.terminate();
+      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsScanning(false);
+    }
+  };
+
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmpUsername || !newEmpPassword || !newEmpFirstName || !newEmpLastName || !newEmpNumber || !newEmpDepartment) {
+    if (!idCardFile) {
+      setStatusMsg({ text: "Pro přidání nového zaměstnance musíte nahrát občanský průkaz.", error: true });
+      return;
+    }
+    if (!newEmpUsername || !newEmpPassword || !newEmpFirstName || !newEmpLastName || !newEmpDepartment) {
       setStatusMsg({ text: "Vyplňte všechna povinná pole.", error: true });
       return;
     }
@@ -491,7 +701,6 @@ export default function DashboardPage() {
           password: newEmpPassword,
           displayName,
           role: newEmpRole,
-          employeeNumber: newEmpNumber,
           firstName: newEmpFirstName,
           lastName: newEmpLastName,
           department: newEmpDepartment,
@@ -504,14 +713,13 @@ export default function DashboardPage() {
         setStatusMsg({ text: `Zaměstnanec ${displayName} byl přidán do systému i databáze.`, error: false });
         setNewEmpUsername("");
         setNewEmpPassword("");
-        setNewEmpDisplayName("");
         setNewEmpRole("EMPLOYEE");
-        setNewEmpNumber("");
         setNewEmpFirstName("");
         setNewEmpLastName("");
         setNewEmpDepartment("");
         setNewEmpEmail("");
         setNewEmpPin("");
+        setIdCardFile(null);
         loadDashboardData();
       } else {
         setStatusMsg({ text: data.error || "Chyba při přidávání.", error: true });
@@ -1374,6 +1582,60 @@ export default function DashboardPage() {
               </h3>
 
               <form onSubmit={handleAddEmployee} className="space-y-3">
+                {/* Nahrávání občanského průkazu shodné s Kartou příchodu */}
+                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-4 text-center bg-slate-50 transition-all">
+                  {isScanning ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-indigo-650" />
+                      <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider animate-pulse">
+                        Vytěžuji doklad... {scanProgress}%
+                      </span>
+                    </div>
+                  ) : idCardFile ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-emerald-600 font-bold text-xs">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
+                        <span>Občanský průkaz připraven</span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-mono truncate max-w-[250px] mx-auto">
+                        {idCardFile.name}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-700 font-bold underline"
+                      >
+                        Změnit soubor
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                        Občanský průkaz (foto/sken) *
+                      </p>
+                      <p className="text-[9px] text-slate-400 leading-normal">
+                        Vyfoťte nebo nahrajte doklad pro automatické vyplnění jména.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase tracking-wider transition-all w-full active:scale-[0.98]"
+                      >
+                        <Camera className="h-3.5 w-3.5" />
+                        Nahrát / Vyfotit doklad
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
@@ -1403,19 +1665,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
-                    Osobní číslo *
-                  </label>
-                  <input
-                    type="text"
-                    value={newEmpNumber}
-                    onChange={(e) => setNewEmpNumber(e.target.value)}
-                    placeholder="Např. 5001"
-                    required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
@@ -1509,7 +1758,7 @@ export default function DashboardPage() {
 
                 <button
                   type="submit"
-                  disabled={isUpdating}
+                  disabled={isUpdating || isScanning}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <UserPlus className="h-3.5 w-3.5" />

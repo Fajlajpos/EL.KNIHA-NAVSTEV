@@ -1,13 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const userIdStr = searchParams.get("userId");
     const statusStr = searchParams.get("status"); // PENDING, APPROVED, REJECTED
+
+    // Běžný zaměstnanec smí číst jen své vlastní žádosti
+    if (session.role === "EMPLOYEE") {
+      let sessionDbId = session.dbId;
+      if (!sessionDbId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { employeeNumber: session.employeeNumber },
+        });
+        sessionDbId = dbUser?.id || null;
+      }
+
+      if (!userIdStr || parseInt(userIdStr, 10) !== sessionDbId) {
+        return NextResponse.json(
+          { error: "Nemáte oprávnění prohlížet žádosti jiných uživatelů." },
+          { status: 403 }
+        );
+      }
+    }
 
     const whereClause: { userId?: number; status?: "PENDING" | "APPROVED" | "REJECTED" } = {};
 
@@ -48,6 +72,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { userId, attendanceLogId, requestedCheckIn, requestedCheckOut, requestedLogType, reason } = body;
 
@@ -59,6 +88,24 @@ export async function POST(req: NextRequest) {
     }
 
     const userIdParsed = parseInt(userId, 10);
+
+    // Běžný zaměstnanec smí podávat žádosti jen za sebe
+    if (session.role === "EMPLOYEE") {
+      let sessionDbId = session.dbId;
+      if (!sessionDbId) {
+        const dbUser = await prisma.user.findUnique({
+          where: { employeeNumber: session.employeeNumber },
+        });
+        sessionDbId = dbUser?.id || null;
+      }
+
+      if (userIdParsed !== sessionDbId) {
+        return NextResponse.json(
+          { error: "Nemáte oprávnění podávat žádosti za jiné uživatele." },
+          { status: 403 }
+        );
+      }
+    }
     const attendanceLogIdParsed = attendanceLogId ? parseInt(attendanceLogId, 10) : null;
 
     const request = await prisma.correctionRequest.create({
@@ -85,6 +132,14 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO" && session.role !== "MANAGER") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO a MANAGER." }, { status: 403 });
+    }
+
     const body = await req.json();
     const { requestId, status, approvedById } = body; // status: APPROVED or REJECTED
 

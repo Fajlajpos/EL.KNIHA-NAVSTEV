@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import crypto from "crypto";
 import { Role } from "@prisma/client";
 import { readUsers } from "@/lib/credentials";
+import { getSession } from "@/lib/session";
 
 function hashPin(pin: string): string {
   return crypto.createHash("sha256").update(pin).digest("hex");
@@ -66,6 +67,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+    if (session.role !== "CEO") {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Pouze pro CEO." }, { status: 403 });
+    }
+
     const body = await req.json();
     const { employeeNumber, firstName, lastName, email, department, role, pin, rfidCardUid, hourlyFund } = body;
 
