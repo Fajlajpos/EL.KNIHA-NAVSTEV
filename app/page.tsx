@@ -478,54 +478,56 @@ export default function Home() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500 font-sans text-xs uppercase tracking-widest gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+      <div className="min-h-screen bg-black/[0.04] flex flex-col items-center justify-center text-[#6e6e73] font-sans text-xs uppercase tracking-widest gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
         <span>Ověřování přístupu...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16 font-sans antialiased selection:bg-indigo-100">
-      
+    <div className="min-h-screen text-[#1d1d1f] pb-16 font-sans antialiased selection:bg-black/[0.06]">
+
       {/* Visual Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
-          {/* Logo Brand */}
+      <header className="lg:sticky lg:top-0 z-30 glass-bar border-b border-black/[0.08] px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+          {/* Page title */}
           <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="CHECKNI TO" className="h-9 w-auto object-contain" />
-            <div className="hidden sm:block border-l border-slate-200 pl-3">
-              <h1 className="text-sm font-black tracking-wider text-indigo-600">CHECKNI TO</h1>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Kniha návštěv</p>
+            <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain" />
+            </div>
+            <div>
+              <p className="eyebrow">Recepce</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Kniha návštěv</h1>
             </div>
           </div>
 
-          {/* Minimalist Summary Tickers & Clock */}
-          <div className="flex flex-wrap items-center gap-5 md:gap-8">
-            {/* Live digital status tickers */}
-            <div className="text-[11px] font-mono text-slate-600 uppercase flex items-center gap-4 bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-sm">
-              <span>V budově: <strong className="text-emerald-600 font-bold">{activeCount}</strong></span>
-              <span className="text-slate-200">|</span>
-              <span>Dnes: <strong className="text-slate-800 font-bold">{totalCount}</strong></span>
-              <span className="text-slate-200">|</span>
-              <span>Odešli: <strong className="text-slate-400 font-bold">{checkedOutCount}</strong></span>
+          {/* Live stat chips & Clock */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="chip chip-emerald gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                V budově: {activeCount}
+              </span>
+              <span className="chip chip-indigo">Dnes: {totalCount}</span>
+              <span className="chip chip-slate">Odešli: {checkedOutCount}</span>
             </div>
 
-            {/* Typewriter clock */}
-            <div className="text-right font-mono border-l border-slate-200 pl-4 hidden sm:block">
-              <span className="text-xs font-bold text-slate-800 block tracking-tight">{time || "00:00:00"}</span>
-              <span className="text-[9px] text-slate-400 block uppercase font-semibold">{dateStr || "ZAVÁDĚNÍ"}</span>
+            {/* Clock */}
+            <div className="text-right font-mono border-l border-black/[0.08] pl-3 hidden sm:block">
+              <span className="text-sm font-bold text-[#1d1d1f] block tracking-tight tabular-nums">{time || "00:00:00"}</span>
+              <span className="text-[9px] text-[#86868b] block uppercase font-semibold">{dateStr || "ZAVÁDĚNÍ"}</span>
             </div>
 
-            <button 
-              onClick={fetchVisits} 
+            <button
+              onClick={fetchVisits}
               disabled={isLoadingVisits}
-              className="p-2 text-slate-400 hover:text-slate-650 bg-white border border-slate-200 rounded-xl transition-all disabled:opacity-50"
+              className="btn-ghost !px-2.5 !py-2.5"
               title="Obnovit data"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoadingVisits ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${isLoadingVisits ? "animate-spin" : ""}`} />
             </button>
           </div>
 
@@ -533,18 +535,18 @@ export default function Home() {
       </header>
 
       {/* Content Area */}
-      <main className="max-w-6xl mx-auto px-4 mt-8">
+      <main className="max-w-7xl mx-auto px-4 lg:px-6 mt-8">
         
         {/* Global Notifications */}
         {successMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
             <span className="font-semibold">{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
+          <div className="mb-6 p-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs flex items-center gap-2.5 shadow-sm animate-in fade-in slide-in-from-top-1">
             <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
             <span className="font-semibold">{errorMsg}</span>
           </div>
@@ -555,39 +557,45 @@ export default function Home() {
           
           {/* LEFT: Index Card check-in registration */}
           <div className="lg:col-span-5">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              {/* Paper line indicator top decoration */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500"></div>
-              
-              <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">
+            <div className="surface card-accent p-6 animate-rise">
+
+              <h2 className="section-title mb-1">
+                <span className="stat-icon bg-black/[0.04] text-[#6e6e73] !h-8 !w-8"><Camera className="h-4 w-4" /></span>
                 Karta příchodu
               </h2>
+              <p className="text-xs text-[#6e6e73] mb-5">Naskenujte doklad nebo vyplňte údaje ručně.</p>
 
               {/* Physical tray dropzone design */}
-              <div className="border border-slate-200 rounded-2xl p-5 text-center mb-6 bg-slate-50">
+              <div className="border-2 border-dashed rounded-2xl p-5 text-center mb-6 bg-black/[0.01] border-black/[0.08] hover:border-black/15 hover:bg-black/[0.03] transition-all">
                 {isScanning ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-indigo-600" />
-                    <span className="text-[11px] font-mono text-slate-500 uppercase tracking-wider">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
+                    <span className="text-[11px] font-mono text-[#6e6e73] uppercase tracking-wider animate-pulse">
                       Vytěžuji doklad... {scanProgress}%
                     </span>
+                    <div className="w-full h-1.5 bg-black/[0.06] rounded-full overflow-hidden mt-1">
+                      <div className="h-full bg-[#0071e3] transition-all" style={{ width: `${scanProgress}%` }} />
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                    <div className="mx-auto h-12 w-12 rounded-2xl bg-black/[0.04] flex items-center justify-center text-[#6e6e73]">
+                      <Camera className="h-5 w-5" />
+                    </div>
+                    <p className="text-[11px] text-[#6e6e73] leading-relaxed font-semibold">
                       Položte doklad (OP, pas) před objektiv a stiskněte tlačítko pro vyčtení údajů.
                     </p>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center justify-center gap-2 bg-indigo-650 hover:bg-indigo-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition-all w-full active:scale-[0.99]"
+                      className="btn-primary w-full"
                     >
                       <Camera className="h-3.5 w-3.5" />
                       Vyfotit / Skenovat doklad
                     </button>
                   </div>
                 )}
-                
+
                 <input
                   type="file"
                   accept="image/*"
@@ -602,69 +610,61 @@ export default function Home() {
               <form onSubmit={handleSaveVisit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
-                      Jméno
-                    </label>
+                    <label className="field-label">Jméno</label>
                     <input
                       type="text"
                       required
                       value={jmeno}
                       onChange={(e) => setJmeno(e.target.value)}
                       placeholder="Jan"
-                      className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
+                      className="input"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
-                      Příjmení
-                    </label>
+                    <label className="field-label">Příjmení</label>
                     <input
                       type="text"
                       required
                       value={prijmeni}
                       onChange={(e) => setPrijmeni(e.target.value)}
                       placeholder="Novák"
-                      className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
+                      className="input"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-widest">
-                    Název firmy / Organizace
-                  </label>
+                  <label className="field-label">Název firmy / Organizace</label>
                   <input
                     type="text"
                     value={organizace}
                     onChange={(e) => setOrganizace(e.target.value)}
                     placeholder="Např. Google (nepovinné)"
-                    className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-medium"
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-widest">
-                    Státní poznávací značka (SPZ)
-                  </label>
+                  <label className="field-label">Státní poznávací značka (SPZ)</label>
                   <input
                     type="text"
                     value={spz}
                     onChange={(e) => setSpz(e.target.value)}
                     placeholder="Např. 1AB 2345 (nepovinné)"
-                    className="mt-1.5 block w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-900 font-mono font-bold uppercase"
+                    className="input font-mono font-bold uppercase"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSaving || isScanning}
-                  className="w-full bg-indigo-650 hover:bg-indigo-600 text-white py-3 px-4 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md transition-all mt-2 disabled:opacity-50 active:scale-[0.99]"
+                  className="btn-primary w-full py-3 tracking-widest"
                 >
                   {isSaving ? (
-                    <span className="flex items-center justify-center gap-1.5">
+                    <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       Zapisuji příchod...
-                    </span>
+                    </>
                   ) : (
                     "Zapsat příchod"
                   )}
@@ -672,8 +672,8 @@ export default function Home() {
               </form>
 
               {/* GDPR Legal Safeguard footer */}
-              <div className="mt-5 pt-4 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-center gap-1.5 font-bold leading-relaxed text-center">
-                <Check className="h-3.5 w-3.5 text-emerald-550 shrink-0" />
+              <div className="mt-5 pt-4 border-t border-black/5 text-[10px] text-[#86868b] flex items-center justify-center gap-1.5 font-bold leading-relaxed text-center">
+                <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                 Fotky ihned odstraňujeme. Neukládáme žádné kopie dokladů.
               </div>
 
@@ -682,76 +682,52 @@ export default function Home() {
 
           {/* RIGHT: Visitor logbook grid */}
           <div className="lg:col-span-7">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500"></div>
-              
+            <div className="surface card-accent p-6 animate-rise">
+
               {/* Controls Bar */}
               <div className="space-y-4 mb-6">
-                
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-widest">
+                  <h2 className="section-title">
+                    <span className="stat-icon bg-black/[0.04] text-[#6e6e73] !h-8 !w-8"><Building2 className="h-4 w-4" /></span>
                     Logbook návštěv
                   </h2>
-                  
+
                   {/* CSV Export */}
                   <button
                     onClick={exportToCSV}
                     disabled={filteredVisits.length === 0}
-                    className="inline-flex items-center justify-center gap-1.5 border border-slate-205 hover:bg-slate-50 text-slate-600 py-1.5 px-3 rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 self-start sm:self-auto"
+                    className="btn-ghost"
                     title="Uložit list do CSV souboru"
                   >
-                    <Download className="h-3.5 w-3.5 text-slate-500" />
+                    <Download className="h-3.5 w-3.5" />
                     Uložit jako CSV
                   </button>
                 </div>
 
                 {/* Search query box */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-3.5 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#86868b]" />
                   <input
                     type="text"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     placeholder="Hledat podle jména, firmy nebo SPZ..."
-                    className="block w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-800"
+                    className="input pl-10"
                   />
                 </div>
 
-                {/* GitHub/Linear style Underline Tabs */}
-                <div className="flex gap-5 border-b border-slate-150 pb-1">
-                  <button
-                    onClick={() => setFilter("all")}
-                    className={`py-1 text-xs font-bold transition-all relative ${
-                      filter === "all"
-                        ? "text-indigo-600"
-                        : "text-slate-450 hover:text-slate-700"
-                    }`}
-                  >
+                {/* Underline Tabs */}
+                <div className="flex gap-6 border-b border-black/[0.08]">
+                  <button onClick={() => setFilter("all")} className={`tab ${filter === "all" ? "tab-active" : ""}`}>
                     Všichni ({totalCount})
-                    {filter === "all" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
-                  <button
-                    onClick={() => setFilter("active")}
-                    className={`py-1 text-xs font-bold transition-all relative flex items-center gap-1 ${
-                      filter === "active"
-                        ? "text-indigo-600"
-                        : "text-slate-450 hover:text-slate-700"
-                    }`}
-                  >
+                  <button onClick={() => setFilter("active")} className={`tab flex items-center gap-1.5 ${filter === "active" ? "tab-active" : ""}`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                     V budově ({activeCount})
-                    {filter === "active" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
-                  <button
-                    onClick={() => setFilter("completed")}
-                    className={`py-1 text-xs font-bold transition-all relative ${
-                      filter === "completed"
-                        ? "text-indigo-600"
-                        : "text-slate-455 hover:text-slate-700"
-                    }`}
-                  >
+                  <button onClick={() => setFilter("completed")} className={`tab ${filter === "completed" ? "tab-active" : ""}`}>
                     Odešli ({checkedOutCount})
-                    {filter === "completed" && <span className="absolute bottom-[-5px] left-0 right-0 h-[2px] bg-indigo-500"></span>}
                   </button>
                 </div>
 
@@ -761,80 +737,85 @@ export default function Home() {
               {isLoadingVisits && visits.length === 0 ? (
                 <div className="space-y-4 py-4">
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className="flex justify-between items-center border-b border-slate-100 pb-4 animate-pulse">
+                    <div key={n} className="flex justify-between items-center border-b border-black/5 pb-4 animate-pulse">
                       <div className="space-y-2 w-2/3">
-                        <div className="h-4 bg-slate-100 rounded w-1/2"></div>
-                        <div className="h-3 bg-slate-100 rounded w-1/3"></div>
+                        <div className="h-4 bg-black/[0.06] rounded w-1/2"></div>
+                        <div className="h-3 bg-black/[0.06] rounded w-1/3"></div>
                       </div>
-                      <div className="h-8 bg-slate-105 rounded w-16"></div>
+                      <div className="h-8 bg-black/[0.06] rounded w-16"></div>
                     </div>
                   ))}
                 </div>
               ) : filteredVisits.length === 0 ? (
-                <div className="py-16 text-center text-slate-400 bg-slate-50 border border-slate-150 rounded-xl">
-                  <p className="font-bold text-xs uppercase tracking-wider text-slate-400">Žádné záznamy</p>
+                <div className="py-16 text-center text-[#86868b] bg-black/[0.04] border border-black/5 rounded-xl">
+                  <p className="font-bold text-xs uppercase tracking-wider text-[#86868b]">Žádné záznamy</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-black/5">
                   {filteredVisits.map((visit) => {
                     const isActive = visit.status === "V budově";
                     return (
-                      <div 
-                        key={visit.id} 
-                        className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
+                      <div
+                        key={visit.id}
+                        className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 -mx-2 px-2 rounded-xl hover:bg-black/[0.06] transition-colors"
                       >
-                        <div className="space-y-1.5 min-w-0">
-                          {/* Name / Organization */}
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800 text-sm">
-                              {visit.prijmeni} {visit.jmeno}
-                            </span>
-                            {visit.organizace && (
-                              <span className="flex items-center gap-1 bg-slate-50 border border-slate-205 px-2 py-0.5 rounded text-slate-600 font-bold text-[10px]">
-                                <Building2 className="h-2.5 w-2.5 text-slate-400" />
-                                {visit.organizace}
-                              </span>
-                            )}
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Avatar */}
+                          <div
+                            className={`h-10 w-10 rounded-xl flex items-center justify-center text-[#0071e3] font-bold text-sm shrink-0 ${
+                              isActive ? "" : "opacity-50 grayscale"
+                            }`}
+                            style={{ background: "rgba(0,113,227,0.12)" }}
+                          >
+                            {visit.prijmeni.charAt(0).toUpperCase()}
                           </div>
 
-                          {/* Monospace Ledger details */}
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500 font-mono">
-                            
-                            {/* Time details */}
-                            <span className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[11px] font-bold text-slate-650">
-                              <Clock className="h-3 w-3 text-slate-400" />
-                              <span>{formatCzechTime(visit.cas_prichodu)}</span>
-                              {!isActive && visit.cas_odchodu && (
-                                <>
-                                  <span className="text-slate-300 font-light">•</span>
-                                  <span>{formatCzechTime(visit.cas_odchodu)}</span>
-                                </>
-                              )}
-                            </span>
-
-                            {/* Duration details */}
-                            <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
-                              Doba: {getElapsedTime(visit.cas_prichodu, visit.cas_odchodu)}
-                            </span>
-
-                            {/* Vehicle plate details */}
-                            {visit.spz && (
-                              <span className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px] text-slate-600">
-                                <Car className="h-3 w-3 text-slate-400" />
-                                {visit.spz}
+                          <div className="space-y-1.5 min-w-0">
+                            {/* Name / Organization */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-[#1d1d1f] text-sm">
+                                {visit.prijmeni} {visit.jmeno}
                               </span>
-                            )}
+                              {visit.organizace && (
+                                <span className="chip chip-slate">
+                                  <Building2 className="h-2.5 w-2.5 text-[#86868b]" />
+                                  {visit.organizace}
+                                </span>
+                              )}
+                            </div>
 
+                            {/* Ledger details */}
+                            <div className="flex flex-wrap items-center gap-1.5 font-mono">
+                              <span className="chip chip-slate text-[10px]">
+                                <Clock className="h-3 w-3 text-[#86868b]" />
+                                <span>{formatCzechTime(visit.cas_prichodu)}</span>
+                                {!isActive && visit.cas_odchodu && (
+                                  <>
+                                    <span className="text-[#86868b] font-light">•</span>
+                                    <span>{formatCzechTime(visit.cas_odchodu)}</span>
+                                  </>
+                                )}
+                              </span>
+                              <span className="chip chip-indigo text-[10px]">
+                                Doba: {getElapsedTime(visit.cas_prichodu, visit.cas_odchodu)}
+                              </span>
+                              {visit.spz && (
+                                <span className="chip chip-slate text-[10px] uppercase tracking-wider">
+                                  <Car className="h-3 w-3 text-[#86868b]" />
+                                  {visit.spz}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        
+
                         {/* Actions */}
                         <div className="shrink-0">
                           {isActive ? (
                             <button
                               onClick={() => handleCheckout(visit.id, `${visit.jmeno} ${visit.prijmeni}`)}
                               disabled={isCheckingOut === visit.id}
-                              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 font-bold py-1.5 px-3.5 rounded-lg text-xs shadow-sm transition-all active:scale-[0.98] disabled:opacity-50"
+                              className="btn-danger !px-3.5 !py-1.5 !text-xs"
                             >
                               {isCheckingOut === visit.id ? (
                                 <>
@@ -849,7 +830,7 @@ export default function Home() {
                               )}
                             </button>
                           ) : (
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pr-2 font-mono">
+                            <div className="text-[10px] font-bold text-[#86868b] uppercase tracking-widest pr-2 font-mono">
                               Odešel
                             </div>
                           )}

@@ -5,7 +5,6 @@ import {
   Key,
   Users,
   Building2,
-  Clock,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
@@ -315,32 +314,33 @@ export default function KioskPage() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500 font-sans text-xs uppercase tracking-widest gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+      <div className="min-h-screen bg-black/[0.04] flex flex-col items-center justify-center text-[#6e6e73] font-sans text-xs uppercase tracking-widest gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
         <span>Ověřování přístupu...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans select-none overflow-hidden">
-      
+    <div className="app-bg min-h-screen text-[#1d1d1f] flex flex-col font-sans select-none overflow-hidden">
+
       {/* Kiosk Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between z-10 shadow-sm">
+      <header className="glass-bar border-b border-black/[0.08] px-8 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-            <Clock className="h-5 w-5 animate-pulse" />
+          <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-mark-dark.png" alt="Checkni.to" className="h-8 w-auto object-contain" />
           </div>
           <div>
-            <h1 className="text-md font-black tracking-wider text-slate-900 uppercase">Elektronický Terminál</h1>
-            <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">Kioskový terminál</p>
+            <h1 className="text-lg font-bold tracking-tight text-[#1d1d1f]">Elektronický terminál</h1>
+            <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Checkni.to • Docházka</p>
           </div>
         </div>
 
         {/* Big Clock for Kiosk Wall Mount */}
         <div className="text-right font-mono">
-          <span className="text-2xl font-black text-slate-800 block tracking-tight">{timeStr || "00:00:00"}</span>
-          <span className="text-[10px] text-slate-400 font-semibold block uppercase">{dateStr || "NAČÍTÁNÍ"}</span>
+          <span className="text-3xl font-bold text-[#1d1d1f] block tracking-tight tabular-nums">{timeStr || "00:00:00"}</span>
+          <span className="text-[10px] text-[#86868b] font-semibold block uppercase">{dateStr || "NAČÍTÁNÍ"}</span>
         </div>
       </header>
 
@@ -349,27 +349,27 @@ export default function KioskPage() {
         
         {/* Punch Result Success/Error Splash Screen Overlay */}
         {punchResult && (
-          <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center animate-in fade-in duration-300 ${
-            punchResult.success ? "bg-emerald-50/98" : "bg-rose-50/98"
+          <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center animate-in fade-in duration-300 backdrop-blur-xl ${
+            punchResult.success ? "bg-white/80" : "bg-white/80"
           }`}>
             <div className="text-center p-8 space-y-4 max-w-lg">
               {punchResult.success ? (
-                <CheckCircle2 className="h-24 w-24 text-emerald-600 mx-auto animate-bounce" />
+                <CheckCircle2 className="h-24 w-24 text-emerald-600 mx-auto animate-bounce text-glow" />
               ) : (
                 <AlertCircle className="h-24 w-24 text-rose-600 mx-auto animate-bounce" />
               )}
-              <h2 className={`text-3xl font-black tracking-tight ${punchResult.success ? "text-emerald-800" : "text-rose-800"}`}>
+              <h2 className={`text-3xl font-bold tracking-tight ${punchResult.success ? "text-emerald-700" : "text-rose-700"}`}>
                 {punchResult.success ? "ZÁPIS ÚSPĚŠNÝ" : "CHYBA ZÁPISU"}
               </h2>
-              <p className="text-lg text-slate-700 font-medium">{punchResult.message}</p>
-              <div className="text-xs text-slate-400 pt-4 font-mono">Obrazovka se vyčistí za okamžik...</div>
+              <p className="text-lg text-[#1d1d1f] font-medium">{punchResult.message}</p>
+              <div className="text-xs text-[#86868b] pt-4 font-mono">Obrazovka se vyčistí za okamžik...</div>
             </div>
           </div>
         )}
 
         {/* Global Notifications */}
         {errorMsg && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-3 shadow-xl backdrop-blur animate-in fade-in slide-in-from-top-4 z-40">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 p-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 text-sm flex items-center gap-3 shadow-xl backdrop-blur animate-in fade-in slide-in-from-top-4 z-40">
             <AlertCircle className="h-5 w-5 text-rose-500 shrink-0" />
             <span className="font-semibold">{errorMsg}</span>
           </div>
@@ -377,19 +377,23 @@ export default function KioskPage() {
 
         {/* STEP 1: WELCOME / IDLE SCREEN */}
         {step === "welcome" && (
-          <div className="w-full max-w-2xl text-center space-y-12 py-10 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-2xl text-center space-y-10 py-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-full-dark.png" alt="Checkni.to" className="h-28 sm:h-32 w-auto object-contain drop-shadow-md" />
+            </div>
             <div className="space-y-4">
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 leading-none">
-                PŘILOŽTE RFID KARTU
+              <h2 className="text-4xl sm:text-6xl font-bold tracking-tight text-[#1d1d1f] leading-none">
+                Přiložte <span className="gradient-text">RFID kartu</span>
               </h2>
-              <p className="text-slate-500 text-lg max-w-md mx-auto">
+              <p className="text-[#6e6e73] text-lg max-w-md mx-auto">
                 Přiložte čip k USB čtečce u terminálu nebo pokračujte zadáním PIN kódu.
               </p>
             </div>
 
             {/* Simulated RFID Scanner input */}
-            <form onSubmit={handleRfidSwipe} className="bg-white border border-slate-205 p-6 rounded-2xl max-w-sm mx-auto shadow-sm space-y-3">
-              <label className="block text-[10px] font-bold text-indigo-650 uppercase tracking-widest text-left">
+            <form onSubmit={handleRfidSwipe} className="bg-white border border-black/[0.08] p-6 rounded-2xl max-w-sm mx-auto shadow-sm space-y-3">
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest text-left">
                 Simulátor RFID čtečky (UID karty)
               </label>
               <div className="flex gap-2">
@@ -398,28 +402,28 @@ export default function KioskPage() {
                   placeholder="Např. 123456"
                   value={rfidInput}
                   onChange={(e) => setRfidInput(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:border-indigo-500 flex-1 font-mono"
+                  className="bg-black/[0.04] border border-black/[0.08] rounded-xl px-4 py-3 text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0071e3] flex-1 font-mono"
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all active:scale-[0.97]"
+                  className="bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold px-4 rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all active:scale-[0.97]"
                 >
                   Pípnout
                 </button>
               </div>
-              <p className="text-[10px] text-slate-400 text-left">
+              <p className="text-[10px] text-[#86868b] text-left">
                 * Josef Marek = `123456`, Jana Svobodová = `789012`
               </p>
             </form>
 
             <div className="pt-6">
-              <span className="text-slate-400 font-bold text-xs uppercase tracking-widest block mb-4">NEBO</span>
+              <span className="text-[#86868b] font-bold text-xs uppercase tracking-widest block mb-4">NEBO</span>
               <button
                 onClick={() => setStep("dept")}
-                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold py-4 px-8 rounded-xl text-md shadow-sm transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-black/[0.06] border border-black/[0.08] text-[#1d1d1f] font-bold py-4 px-8 rounded-xl text-md shadow-sm transition-all active:scale-[0.98]"
               >
-                <Users className="h-5 w-5 text-indigo-600" />
+                <Users className="h-5 w-5 text-[#6e6e73]" />
                 Vybrat jméno & PIN
               </button>
             </div>
@@ -430,18 +434,18 @@ export default function KioskPage() {
         {step === "dept" && (
           <div className="w-full max-w-4xl space-y-6 animate-in fade-in duration-200">
             <div className="flex items-center gap-4">
-              <button onClick={resetKiosk} className="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 shadow-sm">
+              <button onClick={resetKiosk} className="p-3 bg-white hover:bg-black/[0.06] border border-black/[0.08] rounded-xl text-[#6e6e73] hover:text-[#1d1d1f] shadow-sm">
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">VÝBĚR ODDĚLENÍ</h2>
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Krok 1 ze 3</p>
+                <h2 className="text-2xl font-bold text-[#1d1d1f]">VÝBĚR ODDĚLENÍ</h2>
+                <p className="text-xs text-[#86868b] uppercase tracking-widest font-bold">Krok 1 ze 3</p>
               </div>
             </div>
 
             {isLoadingUsers ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-[#6e6e73]" />
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
@@ -452,10 +456,10 @@ export default function KioskPage() {
                       setSelectedDept(dept);
                       setStep("employee");
                     }}
-                    className="h-28 bg-white hover:bg-indigo-50/10 border border-slate-200 hover:border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center gap-3 p-4 shadow-sm transition-all active:scale-[0.97]"
+                    className="h-28 bg-white hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/[0.08] rounded-2xl flex flex-col items-center justify-center gap-3 p-4 shadow-sm transition-all active:scale-[0.97]"
                   >
-                    <Building2 className="h-6 w-6 text-indigo-650" />
-                    <span className="font-bold text-sm text-slate-800 text-center uppercase tracking-wide">{dept}</span>
+                    <Building2 className="h-6 w-6 text-[#6e6e73]" />
+                    <span className="font-bold text-sm text-[#1d1d1f] text-center uppercase tracking-wide">{dept}</span>
                   </button>
                 ))}
               </div>
@@ -467,12 +471,12 @@ export default function KioskPage() {
         {step === "employee" && (
           <div className="w-full max-w-4xl space-y-6 animate-in fade-in duration-200">
             <div className="flex items-center gap-4">
-              <button onClick={() => setStep("dept")} className="p-3 bg-white hover:bg-slate-50 border border-slate-205 rounded-xl text-slate-500 hover:text-slate-800 shadow-sm">
+              <button onClick={() => setStep("dept")} className="p-3 bg-white hover:bg-black/[0.06] border border-black/[0.08] rounded-xl text-[#6e6e73] hover:text-[#1d1d1f] shadow-sm">
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div>
-                <h2 className="text-2xl font-black text-slate-900">ZVOLTE SVÉ JMÉNO</h2>
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Krok 2 ze 3 ({selectedDept})</p>
+                <h2 className="text-2xl font-bold text-[#1d1d1f]">ZVOLTE SVÉ JMÉNO</h2>
+                <p className="text-xs text-[#86868b] uppercase tracking-widest font-bold">Krok 2 ze 3 ({selectedDept})</p>
               </div>
             </div>
 
@@ -487,10 +491,10 @@ export default function KioskPage() {
                       setPinCode("");
                       setStep("pin");
                     }}
-                    className="h-24 bg-white hover:bg-indigo-50/10 border border-slate-200 hover:border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center p-4 shadow-sm transition-all active:scale-[0.97]"
+                    className="h-24 bg-white hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/[0.08] rounded-2xl flex flex-col items-center justify-center p-4 shadow-sm transition-all active:scale-[0.97]"
                   >
-                    <span className="font-bold text-md text-slate-800">{u.lastName} {u.firstName}</span>
-                    <span className="text-[10px] text-slate-400 font-mono mt-1">Osobní číslo: {u.employeeNumber}</span>
+                    <span className="font-bold text-md text-[#1d1d1f]">{u.lastName} {u.firstName}</span>
+                    <span className="text-[10px] text-[#86868b] font-mono mt-1">Osobní číslo: {u.employeeNumber}</span>
                   </button>
                 ))}
             </div>
@@ -512,13 +516,13 @@ export default function KioskPage() {
                       setStep("employee");
                     }
                   }}
-                  className="p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-800 shadow-sm"
+                  className="p-3 bg-white hover:bg-black/[0.06] border border-black/[0.08] rounded-xl text-[#6e6e73] hover:text-[#1d1d1f] shadow-sm"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div>
-                  <h2 className="text-xl font-black text-slate-800">{selectedUser.lastName} {selectedUser.firstName}</h2>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Krok 3 ze 3 • ZADÁNÍ PINu</p>
+                  <h2 className="text-xl font-bold text-[#1d1d1f]">{selectedUser.lastName} {selectedUser.firstName}</h2>
+                  <p className="text-[10px] text-[#86868b] uppercase tracking-widest font-bold">Krok 3 ze 3 • ZADÁNÍ PINu</p>
                 </div>
               </div>
 
@@ -529,8 +533,8 @@ export default function KioskPage() {
                     key={idx}
                     className={`h-6 w-6 rounded-full border-2 ${
                       pinCode.length > idx
-                        ? "bg-indigo-600 border-indigo-600 animate-ping-once"
-                        : "border-slate-300 bg-slate-50"
+                        ? "bg-[#0071e3] border-black/10 animate-ping-once shadow-[0_0_8px_rgba(0,113,227,0.4)]"
+                        : "border-black/10 bg-black/[0.04]"
                     }`}
                   ></div>
                 ))}
@@ -543,28 +547,28 @@ export default function KioskPage() {
                     key={n}
                     onClick={() => handlePinPress(n)}
                     disabled={authStatus !== null || isSubmitting}
-                    className="h-14 bg-white border border-slate-200 hover:bg-slate-50 active:bg-indigo-650 active:text-white rounded-xl text-lg font-black shadow-sm transition-all text-slate-800 active:scale-[0.95]"
+                    className="h-14 bg-white/70 border border-black/[0.08] hover:bg-white active:bg-[#0071e3] active:text-white rounded-full text-lg font-bold shadow-sm transition-all text-[#1d1d1f] active:scale-[0.92] backdrop-blur-sm"
                   >
                     {n}
                   </button>
                 ))}
                 <button
                   onClick={resetKiosk}
-                  className="h-14 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl text-xs font-bold shadow-sm transition-all text-slate-500 active:scale-[0.95]"
+                  className="h-14 bg-black/[0.02] border border-black/[0.06] hover:bg-black/[0.05] rounded-full text-xs font-bold shadow-sm transition-all text-[#6e6e73] active:scale-[0.92]"
                 >
                   Zrušit
                 </button>
                 <button
                   onClick={() => handlePinPress("0")}
                   disabled={authStatus !== null || isSubmitting}
-                  className="h-14 bg-white border border-slate-200 hover:bg-slate-50 active:bg-indigo-655 active:text-white rounded-xl text-lg font-black shadow-sm transition-all text-slate-800 active:scale-[0.95]"
+                  className="h-14 bg-white/70 border border-black/[0.08] hover:bg-white active:bg-[#0071e3] active:text-white rounded-full text-lg font-bold shadow-sm transition-all text-[#1d1d1f] active:scale-[0.92] backdrop-blur-sm"
                 >
                   0
                 </button>
                 <button
                   onClick={handlePinBackspace}
                   disabled={authStatus !== null || isSubmitting}
-                  className="h-14 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl text-md font-bold shadow-sm transition-all text-slate-500 active:scale-[0.95]"
+                  className="h-14 bg-black/[0.02] border border-black/[0.06] hover:bg-black/[0.05] rounded-full text-md font-bold shadow-sm transition-all text-[#6e6e73] active:scale-[0.92]"
                 >
                   ←
                 </button>
@@ -572,19 +576,19 @@ export default function KioskPage() {
             </div>
 
             {/* Right: ACTION SCREEN (only visible after successful PIN/RFID verification) */}
-            <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-8 shadow-xl relative overflow-hidden min-h-[420px] flex flex-col justify-between">
+            <div className="lg:col-span-7 glass p-8 relative overflow-hidden min-h-[420px] flex flex-col justify-between">
               
               {!authStatus ? (
                 // Prompt to enter PIN first
                 <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="h-16 w-16 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center text-indigo-600">
+                  <div className="h-16 w-16 bg-black/[0.02] border border-black/[0.06] rounded-full flex items-center justify-center text-[#6e6e73]">
                     <Key className="h-8 w-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800">Čeká se na ověření totožnosti</h3>
-                  <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
+                  <h3 className="text-xl font-bold text-[#1d1d1f]">Čeká se na ověření totožnosti</h3>
+                  <p className="text-sm text-[#6e6e73] max-w-xs leading-relaxed">
                     Zadejte prosím svůj 4místný PIN kód na klávesnici vlevo.
                   </p>
-                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-2">
+                  <p className="text-[10px] text-[#86868b] uppercase font-bold tracking-widest mt-2">
                     * Pro testování: Petr Bureš = `1111`, Jan Novák = `2222`, Lucie Králová = `4444`
                   </p>
                 </div>
@@ -593,10 +597,10 @@ export default function KioskPage() {
                 <div className="flex-1 flex flex-col justify-between space-y-6">
                   
                   {/* Status Banner */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="bg-black/[0.02] border border-black/[0.06] rounded-3xl p-4 flex items-center justify-between">
                     <div className="space-y-1">
-                      <span className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">Aktuální stav:</span>
-                      <h4 className="text-lg font-black text-slate-900">
+                      <span className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Aktuální stav:</span>
+                      <h4 className="text-lg font-bold text-[#1d1d1f]">
                         {authStatus.currentLog 
                           ? `Přítomen (${
                               authStatus.currentLog.logType === "WORK" ? "Práce" : "Pauza"
@@ -604,23 +608,23 @@ export default function KioskPage() {
                           : "Nepřítomen"}
                       </h4>
                       {authStatus.currentLog && (
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-[#6e6e73] font-medium">
                           Od: {new Date(authStatus.currentLog.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}
                         </p>
                       )}
                     </div>
 
                     {/* Auto punch countdown circle */}
-                    <div className="relative h-16 w-16 flex items-center justify-center bg-white border border-slate-200 rounded-full">
-                      <span className="text-xs font-mono font-black text-indigo-600 animate-pulse">{countdown}s</span>
-                      <div className="absolute inset-0 rounded-full border border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+                    <div className="relative h-16 w-16 flex items-center justify-center bg-white/50 border border-black/[0.06] rounded-full">
+                      <span className="text-xs font-mono font-bold text-[#6e6e73] animate-pulse">{countdown}s</span>
+                      <div className="absolute inset-0 rounded-full border border-black/[0.08] border-t-zinc-200 animate-spin"></div>
                     </div>
                   </div>
 
                   {/* Dynamic Instruction */}
-                  <p className="text-xs text-slate-500 text-center font-medium leading-relaxed">
+                  <p className="text-xs text-[#6e6e73] text-center font-medium leading-relaxed">
                     Zvolte akci stisknutím jednoho z tlačítek níže. Pokud do 3 sekund nic nezvolíte, provede se automatická akce:
-                    <strong className="text-indigo-600 block mt-1 uppercase font-bold">
+                    <strong className="text-[#6e6e73] block mt-1 uppercase font-bold">
                       {authStatus.currentLog ? "Odchod z práce (CHECK_OUT)" : "Příchod do práce (WORK)"}
                     </strong>
                   </p>
@@ -628,45 +632,45 @@ export default function KioskPage() {
                   {/* Touch buttons GRID */}
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     
-                    {/* Green check-in button (visible only if checked out) */}
+                    {/* Check-in button (visible only if checked out) */}
                     {!authStatus.currentLog ? (
                       <button
                         onClick={() => handlePunch("WORK")}
                         disabled={isSubmitting}
-                        className="col-span-2 h-28 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/30 text-white font-black text-lg uppercase tracking-widest rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-emerald-500/10"
+                        className="btn-primary col-span-2 h-28 text-lg uppercase tracking-widest rounded-3xl flex items-center justify-center gap-3"
                       >
                         <CheckCircle2 className="h-7 w-7" />
                         PŘÍCHOD DO PRÁCE
                       </button>
                     ) : (
                       <>
-                        {/* Red Check-out button (visible if checked in) */}
+                        {/* Check-out button (visible if checked in) */}
                         <button
                           onClick={() => handlePunch("CHECK_OUT")}
                           disabled={isSubmitting}
-                          className="h-28 bg-rose-600 hover:bg-rose-500 border border-rose-500/30 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-rose-500/10"
+                          className="btn-primary h-28 text-sm uppercase tracking-wider rounded-3xl flex flex-col items-center justify-center gap-2"
                         >
-                          <span className="text-xs opacity-80 font-bold uppercase tracking-widest">Odchod z firmy</span>
-                          <span className="text-md">ODCHOD Z PRÁCE</span>
+                          <span className="text-xs opacity-75 font-semibold uppercase tracking-widest">Odchod z firmy</span>
+                          <span className="text-base">ODCHOD Z PRÁCE</span>
                         </button>
 
-                        {/* Yellow Lunch button */}
+                        {/* Lunch button */}
                         <button
                           onClick={() => handlePunch("LUNCH")}
                           disabled={isSubmitting}
-                          className="h-28 bg-amber-500 hover:bg-amber-450 border border-amber-400/30 text-slate-950 font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-amber-500/10"
+                          className="btn-ghost h-28 text-sm uppercase tracking-wider rounded-3xl flex flex-col items-center justify-center gap-2"
                         >
-                          <span className="text-xs opacity-80 font-bold uppercase tracking-widest">Jídlo / Oběd</span>
-                          <span className="text-md">
+                          <span className="text-xs opacity-75 font-semibold uppercase tracking-widest">Jídlo / Oběd</span>
+                          <span className="text-base">
                             {authStatus.currentLog.logType === "LUNCH" ? "NÁVRAT Z OBĚDA" : "PAUZA / OBĚD"}
                           </span>
                         </button>
 
-                        {/* Blue Doctor button */}
+                        {/* Doctor button */}
                         <button
                           onClick={() => handlePunch("DOCTOR")}
                           disabled={isSubmitting}
-                          className="col-span-2 h-20 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/30 text-white font-bold text-sm uppercase tracking-wider rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                          className="btn-ghost col-span-2 h-20 text-sm uppercase tracking-wider rounded-3xl flex items-center justify-center gap-2"
                         >
                           <Building2 className="h-4 w-4" />
                           <span>ODCHOD K LÉKAŘI</span>
@@ -685,7 +689,7 @@ export default function KioskPage() {
       </main>
 
       {/* Footer Branding */}
-      <footer className="bg-white border-t border-slate-200 py-4 px-8 text-center text-[10px] text-slate-400 font-semibold tracking-wider uppercase shadow-inner">
+      <footer className="bg-white border-t border-black/[0.08] py-4 px-8 text-center text-[10px] text-[#86868b] font-semibold tracking-wider uppercase shadow-inner">
         © 2026 Elektronická kniha návštěv & docházka • Všechna práva vyhrazena
       </footer>
 

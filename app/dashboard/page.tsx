@@ -23,6 +23,9 @@ import {
   Camera,
   Bot,
   Send,
+  Building2,
+  UserCheck,
+  Users,
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 
@@ -303,9 +306,9 @@ export default function DashboardPage() {
         const cells = line.split("|").map(c => c.trim()).filter(c => c !== "");
         if (line.includes("---")) return null;
         return (
-          <div key={idx} className="flex border-b border-slate-200 py-1 font-mono text-[9px] divide-x divide-slate-100">
+          <div key={idx} className="flex border-b border-black/[0.08] py-1 font-mono text-[9px] divide-x divide-black/5">
             {cells.map((cell, cIdx) => (
-              <span key={cIdx} className="flex-1 px-1 truncate font-bold text-slate-800">{cell}</span>
+              <span key={cIdx} className="flex-1 px-1 truncate font-bold text-[#1d1d1f]">{cell}</span>
             ))}
           </div>
         );
@@ -317,10 +320,10 @@ export default function DashboardPage() {
         let itemContent: React.ReactNode = rawContent;
         if (rawContent.includes("**")) {
           const parts = rawContent.split("**");
-          itemContent = parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold text-slate-900">{part}</strong> : part);
+          itemContent = parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold text-[#1d1d1f]">{part}</strong> : part);
         }
         content = (
-          <li key={idx} className="list-disc list-inside ml-1 my-0.5 text-slate-700">
+          <li key={idx} className="list-disc list-inside ml-1 my-0.5 text-[#1d1d1f]">
             {itemContent}
           </li>
         );
@@ -993,38 +996,35 @@ export default function DashboardPage() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-500 font-sans text-xs uppercase tracking-widest gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+      <div className="min-h-screen bg-black/[0.04] flex flex-col items-center justify-center text-[#6e6e73] font-sans text-xs uppercase tracking-widest gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
         <span>Ověřování přístupu...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16 font-sans antialiased selection:bg-indigo-100">
-      
-      {/* Top Banner Dashboard */}
-      <header className="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-40 shadow-sm">
+    <div className="min-h-screen text-[#1d1d1f] pb-16 font-sans antialiased selection:bg-black/[0.06]">
+
+      <header className="lg:sticky lg:top-0 z-30 glass-bar border-b border-black/[0.08] px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/logo.png" 
-              alt="Logo CHECKNI TO" 
-              className="h-9 w-auto object-contain" 
-            />
-            <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain" />
+            </div>
             <div>
-              <h1 className="text-md font-black tracking-widest text-slate-900 uppercase">CEO MANAGEMENT DASHBOARD</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Elektronická Kniha & Docházka</p>
+              <p className="eyebrow">Management</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">CEO Dashboard</h1>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            
+          <div className="flex flex-wrap items-center gap-3">
+
             {/* Evacuation Alert trigger */}
             <button
               onClick={handleDownloadEvacuationList}
-              className="inline-flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 px-4 rounded-xl text-xs shadow-md transition-all active:scale-[0.98] uppercase tracking-wider animate-pulse"
+              className="btn-danger"
               title="Okamžitě stáhnout seznam osob pro evakuační shromaždiště"
             >
               <ShieldAlert className="h-4 w-4" />
@@ -1036,13 +1036,13 @@ export default function DashboardPage() {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold font-mono outline-none text-slate-800 focus:border-indigo-650"
+              className="input !w-auto !py-2 font-mono font-bold text-xs"
             />
 
             <button
               onClick={loadDashboardData}
               disabled={isUpdating}
-              className="p-2 text-slate-500 hover:text-slate-800 bg-slate-50 border border-slate-200 rounded-xl transition-all"
+              className="btn-ghost !px-2.5 !py-2.5"
             >
               <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
             </button>
@@ -1051,12 +1051,12 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 mt-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 lg:px-6 mt-8 space-y-8">
         
         {/* Status messages */}
         {statusMsg && (
           <div className={`p-4 rounded-xl border text-sm font-semibold flex items-center gap-2.5 shadow-sm animate-in fade-in ${
-            statusMsg.error ? "bg-rose-50 border-rose-200 text-rose-800" : "bg-emerald-50 border-emerald-250 text-emerald-800"
+            statusMsg.error ? "bg-rose-500/15 border-rose-500/30 text-rose-700" : "bg-emerald-500/15 border-emerald-500/30 text-emerald-700"
           }`}>
             {statusMsg.error ? <AlertTriangle className="h-5 w-5 text-rose-600" /> : <CheckCircle className="h-5 w-5 text-emerald-600" />}
             <span>{statusMsg.text}</span>
@@ -1064,88 +1064,68 @@ export default function DashboardPage() {
         )}
 
         {/* TILES TICKERS: Real-time counts */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block">Osob v budově celkem</span>
-            <div className="flex justify-between items-baseline mt-2">
-              <strong className="text-3xl font-black text-slate-900">{totalInsideCount}</strong>
-              <span className="text-xs font-mono font-bold text-slate-400">Evakuační stav</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+          <div className="stat-card animate-rise">
+            <div className="flex items-start justify-between">
+              <span className="eyebrow">Osob v budově celkem</span>
+              <span className="stat-icon bg-black/[0.04] text-[#6e6e73]"><Users className="h-5 w-5" /></span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <strong className="text-4xl font-bold text-[#1d1d1f] tabular-nums">{totalInsideCount}</strong>
+              <span className="text-[11px] font-bold text-[#86868b]">evakuační stav</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block">Zaměstnanci uvnitř</span>
-            <div className="flex justify-between items-baseline mt-2">
-              <strong className="text-3xl font-black text-indigo-600">{employeesInsideCount}</strong>
-              <span className="text-xs font-mono font-bold text-slate-400">Příchody logovány</span>
+          <div className="stat-card animate-rise" style={{ animationDelay: "40ms" }}>
+            <div className="flex items-start justify-between">
+              <span className="eyebrow">Zaměstnanci uvnitř</span>
+              <span className="stat-icon bg-emerald-500/15 text-emerald-600"><UserCheck className="h-5 w-5" /></span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <strong className="text-4xl font-bold text-emerald-600 tabular-nums">{employeesInsideCount}</strong>
+              <span className="text-[11px] font-bold text-[#86868b]">příchody logovány</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block">Zákazníci / Hosté</span>
-            <div className="flex justify-between items-baseline mt-2">
-              <strong className="text-3xl font-black text-amber-600">{visitorsInsideCount}</strong>
-              <span className="text-xs font-mono font-bold text-slate-400">Kniha návštěv</span>
+          <div className="stat-card animate-rise" style={{ animationDelay: "80ms" }}>
+            <div className="flex items-start justify-between">
+              <span className="eyebrow">Zákazníci / Hosté</span>
+              <span className="stat-icon bg-amber-500/15 text-amber-600"><Building2 className="h-5 w-5" /></span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <strong className="text-4xl font-bold text-amber-600 tabular-nums">{visitorsInsideCount}</strong>
+              <span className="text-[11px] font-bold text-[#86868b]">kniha návštěv</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest block">Nevyřízené korekce</span>
-            <div className="flex justify-between items-baseline mt-2">
-              <strong className={`text-3xl font-black ${requests.length > 0 ? "text-rose-600 animate-pulse" : "text-slate-400"}`}>
+          <div className="stat-card animate-rise" style={{ animationDelay: "120ms" }}>
+            <div className="flex items-start justify-between">
+              <span className="eyebrow">Nevyřízené korekce</span>
+              <span className={`stat-icon ${requests.length > 0 ? "bg-rose-500/15 text-rose-600" : "bg-black/[0.06] text-[#86868b]"}`}><FileCheck className="h-5 w-5" /></span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <strong className={`text-4xl font-bold tabular-nums ${requests.length > 0 ? "text-rose-600" : "text-[#86868b]"}`}>
                 {requests.length}
               </strong>
-              <span className="text-xs font-mono font-bold text-slate-400">Žádostí ke schválení</span>
+              <span className="text-[11px] font-bold text-[#86868b]">žádostí ke schválení</span>
             </div>
           </div>
 
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-slate-200 gap-6">
-          <button
-            onClick={() => setActiveTab("evac_approvals")}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activeTab === "evac_approvals"
-                ? "border-indigo-600 text-indigo-600 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Přítomnost & Korekce ({totalInsideCount + requests.length})
+        <div className="flex border-b border-black/[0.08] gap-6 overflow-x-auto">
+          <button onClick={() => setActiveTab("evac_approvals")} className={`tab whitespace-nowrap ${activeTab === "evac_approvals" ? "tab-active" : ""}`}>
+            Přítomnost &amp; Korekce ({totalInsideCount + requests.length})
           </button>
-          <button
-            onClick={() => setActiveTab("payroll")}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activeTab === "payroll"
-                ? "border-indigo-600 text-indigo-600 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
+          <button onClick={() => setActiveTab("payroll")} className={`tab whitespace-nowrap ${activeTab === "payroll" ? "tab-active" : ""}`}>
             Zpracování mezd
           </button>
-          <button
-            onClick={() => setActiveTab("shifts")}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activeTab === "shifts"
-                ? "border-indigo-600 text-indigo-600 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
+          <button onClick={() => setActiveTab("shifts")} className={`tab whitespace-nowrap ${activeTab === "shifts" ? "tab-active" : ""}`}>
             Plánování směn ({allShifts.length})
           </button>
-          <button
-            onClick={() => setActiveTab("employees_mgmt")}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activeTab === "employees_mgmt"
-                ? "border-indigo-600 text-indigo-600 font-black"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
+          <button onClick={() => setActiveTab("employees_mgmt")} className={`tab whitespace-nowrap ${activeTab === "employees_mgmt" ? "tab-active" : ""}`}>
             Správa zaměstnanců ({credentialUsers.length})
           </button>
         </div>
@@ -1155,35 +1135,34 @@ export default function DashboardPage() {
             
             {/* LEFT COLUMN: LIVE Evacuation plan list */}
             <div className="lg:col-span-6 space-y-8">
-              <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-rose-500"></div>
-                
+              <div className="surface card-accent card-accent-rose text-[#1d1d1f] p-5">
+
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d1d1f] flex items-center gap-1.5">
                     <span className="h-2 w-2 bg-rose-500 rounded-full animate-ping"></span>
                     Kdo je aktuálně ve firmě
                   </h3>
                 </div>
 
                 {totalInsideCount === 0 ? (
-                  <p className="py-8 text-center text-xs text-slate-500 font-semibold italic">Budova je prázdná.</p>
+                  <p className="py-8 text-center text-xs text-[#6e6e73] font-semibold italic">Budova je prázdná.</p>
                 ) : (
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                     
                     {/* Active Employees */}
                     {liveOccupants.employees.filter(e => !e.checkOut).map((occ) => (
-                      <div key={occ.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs flex justify-between items-center gap-4">
+                      <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
-                          <div className="font-bold text-slate-800">{occ.lastName} {occ.firstName}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">{occ.department}</div>
-                          <div className="text-[9px] text-indigo-600 font-mono mt-1">Příchod: {new Date(occ.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}</div>
+                          <div className="font-bold text-[#1d1d1f]">{occ.lastName} {occ.firstName}</div>
+                          <div className="text-[10px] text-[#6e6e73] mt-0.5">{occ.department}</div>
+                          <div className="text-[9px] text-[#6e6e73] font-mono mt-1">Příchod: {new Date(occ.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}</div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-[6px] text-[9px] font-black uppercase tracking-wider ${
+                        <span className={`px-2 py-0.5 rounded-[6px] text-[9px] font-bold uppercase tracking-wider ${
                           occ.status === "Na obědě" 
-                            ? "bg-amber-50 border border-amber-200 text-amber-800" 
+                            ? "bg-amber-500/15 border border-amber-500/30 text-amber-700" 
                             : occ.status === "U lékaře" 
-                            ? "bg-sky-50 border border-sky-200 text-sky-855"
-                            : "bg-emerald-50 border border-emerald-250 text-emerald-800"
+                            ? "bg-sky-500/15 border border-sky-500/30 text-sky-700"
+                            : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-700"
                         }`}>
                           {occ.status}
                         </span>
@@ -1192,13 +1171,13 @@ export default function DashboardPage() {
 
                     {/* Active Visitors */}
                     {liveOccupants.visitors.filter(v => !v.checkOut).map((occ) => (
-                      <div key={occ.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs flex justify-between items-center gap-4">
+                      <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
                           <div className="font-bold text-amber-700">Host: {occ.lastName} {occ.firstName}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">Firma: {occ.organization}</div>
+                          <div className="text-[10px] text-[#6e6e73] mt-0.5">Firma: {occ.organization}</div>
                           <div className="text-[9px] text-amber-600 font-mono mt-1">Příchod: {new Date(occ.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}</div>
                         </div>
-                        <span className="bg-amber-50 border border-amber-200 text-amber-808 px-2 py-0.5 rounded-[6px] text-[9px] font-black uppercase tracking-wider">
+                        <span className="bg-amber-500/15 border border-amber-500/30 text-amber-808 px-2 py-0.5 rounded-[6px] text-[9px] font-bold uppercase tracking-wider">
                           Zakázka / Host
                         </span>
                       </div>
@@ -1211,35 +1190,34 @@ export default function DashboardPage() {
 
             {/* RIGHT COLUMN: Correction approvals */}
             <div className="lg:col-span-6">
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
+              <div className="surface card-accent p-5">
                 
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-1.5">
-                  <FileCheck className="h-4 w-4 text-indigo-650" />
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 flex items-center gap-1.5">
+                  <FileCheck className="h-4 w-4 text-[#6e6e73]" />
                   Schvalování oprav docházky
                 </h3>
 
                 {requests.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-slate-500 italic bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase tracking-wider">
+                  <div className="py-8 text-center text-xs text-[#6e6e73] italic bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold uppercase tracking-wider">
                     Žádné pending žádosti k vyřízení.
                   </div>
                 ) : (
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
                     {requests.map((req) => (
-                      <div key={req.id} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                      <div key={req.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3.5 space-y-3">
                         
                         <div className="text-xs font-mono">
-                          <strong className="text-slate-800 block">{req.user.lastName} {req.user.firstName}</strong>
-                          <span className="text-[10px] text-slate-500">{req.user.department}</span>
+                          <strong className="text-[#1d1d1f] block">{req.user.lastName} {req.user.firstName}</strong>
+                          <span className="text-[10px] text-[#6e6e73]">{req.user.department}</span>
                         </div>
 
-                        <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-[10px] font-mono space-y-1 text-slate-700">
-                          <div className="text-indigo-600 font-bold">Typ: {req.requestedLogType}</div>
+                        <div className="bg-white border border-black/[0.08] rounded-lg p-2.5 text-[10px] font-mono space-y-1 text-[#1d1d1f]">
+                          <div className="text-[#6e6e73] font-bold">Typ: {req.requestedLogType}</div>
                           <div>Změna: {req.requestedCheckIn ? new Date(req.requestedCheckIn).toLocaleDateString("cs-CZ") : ""}</div>
                           <div>Příchod: {req.requestedCheckIn ? new Date(req.requestedCheckIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</div>
                           <div>Odchod: {req.requestedCheckOut ? new Date(req.requestedCheckOut).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</div>
                           
-                          <div className="italic text-slate-500 border-l border-slate-200 pl-1.5 mt-2 max-h-[50px] overflow-y-auto font-sans leading-relaxed">
+                          <div className="italic text-[#6e6e73] border-l border-black/[0.08] pl-1.5 mt-2 max-h-[50px] overflow-y-auto font-sans leading-relaxed">
                             &quot;{req.reason}&quot;
                           </div>
                         </div>
@@ -1276,21 +1254,20 @@ export default function DashboardPage() {
         {activeTab === "payroll" && (
           <div className="animate-in fade-in duration-200">
             {/* Payroll Wages table & Anomaly panel */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
+            <div className="surface card-accent p-6">
               
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  <h3 className="text-sm font-bold text-[#1d1d1f] uppercase tracking-widest">
                     Zpracování mezd & Podklady
                   </h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Autom. odečten oběd (-30 min) u směn nad 6h</p>
+                  <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest mt-0.5">Autom. odečten oběd (-30 min) u směn nad 6h</p>
                 </div>
                 
                 <button
                   onClick={handleExportPayroll}
                   disabled={users.length === 0}
-                  className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-4 rounded-xl text-xs font-bold shadow-md transition-all active:scale-[0.99] uppercase tracking-wider"
+                  className="inline-flex items-center justify-center gap-2 bg-[#0071e3] hover:bg-[#0077ed] text-white py-2.5 px-4 rounded-xl text-xs font-bold shadow-md transition-all active:scale-[0.99] uppercase tracking-wider"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   Stáhnout podklady (CSV)
@@ -1299,20 +1276,20 @@ export default function DashboardPage() {
 
               {/* Filters search */}
               <div className="relative mb-6">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-[#6e6e73]" />
                 <input
                   type="text"
                   placeholder="Hledat podle jména, osobního čísla nebo oddělení..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="block w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-800"
+                  className="block w-full pl-9 pr-4 py-2 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
                 />
               </div>
 
               {/* Wage summary list view */}
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                <table className="w-full text-left text-xs font-mono divide-y divide-slate-200">
-                  <thead className="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-wider font-bold border-b border-slate-200">
+              <div className="overflow-x-auto border border-black/[0.08] rounded-xl">
+                <table className="w-full text-left text-xs font-mono divide-y divide-black/[0.08]">
+                  <thead className="bg-black/[0.04] text-[10px] text-[#6e6e73] uppercase tracking-wider font-bold border-b border-black/[0.08]">
                     <tr>
                       <th className="px-4 py-3 font-sans">Jméno / ID</th>
                       <th className="px-3 py-3 text-center">Čisté hod.</th>
@@ -1323,21 +1300,21 @@ export default function DashboardPage() {
                       <th className="px-4 py-3 text-center font-sans">Varování</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                  <tbody className="divide-y divide-black/5 bg-white text-[#1d1d1f]">
                     {filteredUsers.map((user) => {
                       const stats = calculateEmployeeStats(user.id);
                       const isOvertime = stats.balance >= 0;
 
                       return (
-                        <tr key={user.id} className="hover:bg-slate-50/50">
+                        <tr key={user.id} className="hover:bg-black/[0.06]">
                           <td className="px-4 py-3.5 font-sans">
-                            <span className="font-bold text-slate-900 block">{user.lastName} {user.firstName}</span>
-                            <span className="text-[10px] text-slate-500 block font-mono">Číslo: {user.employeeNumber} • {user.department}</span>
+                            <span className="font-bold text-[#1d1d1f] block">{user.lastName} {user.firstName}</span>
+                            <span className="text-[10px] text-[#6e6e73] block font-mono">Číslo: {user.employeeNumber} • {user.department}</span>
                           </td>
-                          <td className="px-3 py-3.5 text-center font-bold text-slate-900">{stats.total}h</td>
-                          <td className="px-3 py-3.5 text-center text-slate-500">{stats.afternoon}h</td>
-                          <td className="px-3 py-3.5 text-center text-slate-500">{stats.night}h</td>
-                          <td className="px-3 py-3.5 text-center text-slate-500">{stats.weekend}h</td>
+                          <td className="px-3 py-3.5 text-center font-bold text-[#1d1d1f]">{stats.total}h</td>
+                          <td className="px-3 py-3.5 text-center text-[#6e6e73]">{stats.afternoon}h</td>
+                          <td className="px-3 py-3.5 text-center text-[#6e6e73]">{stats.night}h</td>
+                          <td className="px-3 py-3.5 text-center text-[#6e6e73]">{stats.weekend}h</td>
                           <td className={`px-3 py-3.5 text-center font-bold ${
                             isOvertime ? "text-emerald-600" : "text-rose-600"
                           }`}>
@@ -1346,12 +1323,12 @@ export default function DashboardPage() {
                           <td className="px-4 py-3.5 text-center">
                             <div className="flex items-center justify-center gap-1">
                               {stats.hasAnomaly && (
-                                <span className="bg-rose-50 text-rose-700 border border-rose-200 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Zapomenutý odchod (detekován log >14 hodin)">
+                                <span className="bg-rose-500/15 text-rose-700 border border-rose-500/30 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Zapomenutý odchod (detekován log >14 hodin)">
                                   Log chyba
                                 </span>
                               )}
                               {stats.hasOverlap && (
-                                <span className="bg-amber-50 text-amber-855 border border-amber-200 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Detekována časová kolize (překryvy dvou logů v jeden day!)">
+                                <span className="bg-amber-500/15 text-amber-700 border border-amber-500/30 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Detekována časová kolize (překryvy dvou logů v jeden day!)">
                                   KOLIZE
                                 </span>
                               )}
@@ -1375,23 +1352,22 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-200">
             
             {/* LEFT: New Shift Scheduler Form */}
-            <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-650"></div>
+            <div className="lg:col-span-4 surface card-accent p-6">
               
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4">
                 Naplánovat novou směnu
               </h3>
 
               <form onSubmit={handleCreateShift} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                     Zaměstnanec
                   </label>
                   <select
                     value={newShiftUserId}
                     onChange={(e) => setNewShiftUserId(e.target.value)}
                     required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-semibold text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   >
                     <option value="">-- Vyberte zaměstnance --</option>
                     {users.filter(u => u.role !== "CEO").map((u) => (
@@ -1403,7 +1379,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                     Datum směny
                   </label>
                   <input
@@ -1411,13 +1387,13 @@ export default function DashboardPage() {
                     value={newShiftDate}
                     onChange={(e) => setNewShiftDate(e.target.value)}
                     required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                       Začátek směny
                     </label>
                     <input
@@ -1425,11 +1401,11 @@ export default function DashboardPage() {
                       value={newShiftStartTime}
                       onChange={(e) => setNewShiftStartTime(e.target.value)}
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                       Konec směny
                     </label>
                     <input
@@ -1437,13 +1413,13 @@ export default function DashboardPage() {
                       value={newShiftEndTime}
                       onChange={(e) => setNewShiftEndTime(e.target.value)}
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                     Rychlé předvolby
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -1456,17 +1432,17 @@ export default function DashboardPage() {
                           setNewShiftEndTime(p.end);
                           if (!newShiftNote.trim()) setNewShiftNote(`${p.label} směna`);
                         }}
-                        className="bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 font-bold px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96]"
+                        className="bg-black/[0.04] hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/10 text-[#1d1d1f] hover:text-[#6e6e73] font-bold px-2.5 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96]"
                       >
                         {p.label}
-                        <span className="block text-[9px] font-mono font-normal text-slate-400">{p.start}–{p.end}</span>
+                        <span className="block text-[9px] font-mono font-normal text-[#86868b]">{p.start}–{p.end}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
                     Poznámka / Název směny
                   </label>
                   <input
@@ -1474,14 +1450,14 @@ export default function DashboardPage() {
                     placeholder="Např. Ranní směna, Záskok..."
                     value={newShiftNote}
                     onChange={(e) => setNewShiftNote(e.target.value)}
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
+                  className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   Naplánovat směnu
                 </button>
@@ -1489,18 +1465,17 @@ export default function DashboardPage() {
             </div>
 
             {/* RIGHT: Scheduled Shifts list with Delete buttons */}
-            <div className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-650"></div>
+            <div className="lg:col-span-8 surface card-accent p-6">
               
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f]">
                   Všechny naplánované směny (Rozpis)
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={shiftFilterUserId}
                     onChange={(e) => setShiftFilterUserId(e.target.value)}
-                    className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-semibold text-slate-700 outline-none focus:border-indigo-500"
+                    className="p-2 bg-black/[0.04] border border-black/[0.08] rounded-lg text-[11px] font-semibold text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   >
                     <option value="">Všichni zaměstnanci</option>
                     {users.filter(u => u.role !== "CEO").map((u) => (
@@ -1513,13 +1488,13 @@ export default function DashboardPage() {
                     type="date"
                     value={shiftFilterDate}
                     onChange={(e) => setShiftFilterDate(e.target.value)}
-                    className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-mono text-slate-700 outline-none focus:border-indigo-500"
+                    className="p-2 bg-black/[0.04] border border-black/[0.08] rounded-lg text-[11px] font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   />
                   {(shiftFilterUserId || shiftFilterDate) && (
                     <button
                       type="button"
                       onClick={() => { setShiftFilterUserId(""); setShiftFilterDate(""); }}
-                      className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 font-bold px-2.5 py-2 rounded-lg text-[10px] uppercase tracking-wide transition-all"
+                      className="bg-black/[0.06] hover:bg-black/[0.08] border border-black/[0.08] text-[#6e6e73] font-bold px-2.5 py-2 rounded-lg text-[10px] uppercase tracking-wide transition-all"
                     >
                       Zrušit filtr
                     </button>
@@ -1536,7 +1511,7 @@ export default function DashboardPage() {
 
                 if (allShifts.length === 0) {
                   return (
-                    <div className="py-20 text-center text-slate-500 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider">
+                    <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                       Žádné naplánované směny v systému.
                     </div>
                   );
@@ -1544,14 +1519,14 @@ export default function DashboardPage() {
 
                 if (filteredShifts.length === 0) {
                   return (
-                    <div className="py-20 text-center text-slate-500 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider">
+                    <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                       Žádné směny neodpovídají zvolenému filtru.
                     </div>
                   );
                 }
 
                 return (
-                <div className="divide-y divide-slate-100 max-h-[550px] overflow-y-auto pr-2">
+                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto pr-2">
                   {filteredShifts.map((shift) => {
                     const isEditing = editingShiftId === shift.id;
                     const netHours = isEditing
@@ -1560,44 +1535,44 @@ export default function DashboardPage() {
 
                     if (isEditing) {
                       return (
-                        <div key={shift.id} className="py-3 bg-indigo-50/40 -mx-2 px-2 rounded-lg">
+                        <div key={shift.id} className="py-3 bg-black/[0.04] -mx-2 px-2 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 border border-indigo-200 text-indigo-700">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.06] border border-black/[0.08] text-[#6e6e73]">
                               {shift.user.lastName} {shift.user.firstName}
                             </span>
-                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">Úprava směny</span>
+                            <span className="text-[10px] font-bold text-[#6e6e73] uppercase tracking-wide">Úprava směny</span>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">Datum</label>
+                              <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Datum</label>
                               <input
                                 type="date"
                                 value={editShiftDate}
                                 onChange={(e) => setEditShiftDate(e.target.value)}
-                                className="block w-full p-2 bg-white border border-slate-200 rounded-lg text-[11px] font-mono text-slate-800 outline-none focus:border-indigo-500"
+                                className="block w-full p-2 bg-white border border-black/[0.08] rounded-lg text-[11px] font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">Začátek</label>
+                              <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Začátek</label>
                               <input
                                 type="time"
                                 value={editShiftStartTime}
                                 onChange={(e) => setEditShiftStartTime(e.target.value)}
-                                className="block w-full p-2 bg-white border border-slate-200 rounded-lg text-[11px] font-mono text-slate-800 outline-none focus:border-indigo-500"
+                                className="block w-full p-2 bg-white border border-black/[0.08] rounded-lg text-[11px] font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">Konec</label>
+                              <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Konec</label>
                               <input
                                 type="time"
                                 value={editShiftEndTime}
                                 onChange={(e) => setEditShiftEndTime(e.target.value)}
-                                className="block w-full p-2 bg-white border border-slate-200 rounded-lg text-[11px] font-mono text-slate-800 outline-none focus:border-indigo-500"
+                                className="block w-full p-2 bg-white border border-black/[0.08] rounded-lg text-[11px] font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                               />
                             </div>
                             <div className="flex flex-col justify-end">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1">Čistý</span>
-                              <span className="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-2 rounded-lg text-[11px] font-mono text-center">
+                              <span className="text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Čistý</span>
+                              <span className="font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-2 rounded-lg text-[11px] font-mono text-center">
                                 {netHours.toFixed(1)} hod
                               </span>
                             </div>
@@ -1608,7 +1583,7 @@ export default function DashboardPage() {
                                 key={p.label}
                                 type="button"
                                 onClick={() => { setEditShiftStartTime(p.start); setEditShiftEndTime(p.end); }}
-                                className="bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-600 hover:text-indigo-700 font-bold px-2 py-1 rounded text-[9px] uppercase tracking-wide transition-all"
+                                className="bg-white hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/10 text-[#6e6e73] hover:text-[#6e6e73] font-bold px-2 py-1 rounded text-[9px] uppercase tracking-wide transition-all"
                               >
                                 {p.label} {p.start}–{p.end}
                               </button>
@@ -1619,13 +1594,13 @@ export default function DashboardPage() {
                             placeholder="Poznámka / název směny"
                             value={editShiftNote}
                             onChange={(e) => setEditShiftNote(e.target.value)}
-                            className="block w-full p-2 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 outline-none focus:border-indigo-500 mb-2"
+                            className="block w-full p-2 bg-white border border-black/[0.08] rounded-lg text-[11px] text-[#1d1d1f] outline-none focus:border-[#0071e3] mb-2"
                           />
                           <div className="flex items-center gap-2 justify-end">
                             <button
                               type="button"
                               onClick={handleCancelEditShift}
-                              className="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all"
+                              className="bg-black/[0.06] hover:bg-black/[0.08] border border-black/[0.08] text-[#6e6e73] font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all"
                             >
                               Zrušit
                             </button>
@@ -1633,7 +1608,7 @@ export default function DashboardPage() {
                               type="button"
                               disabled={isUpdating}
                               onClick={() => handleUpdateShift(shift.id)}
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.97] disabled:opacity-50"
+                              className="bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.97] disabled:opacity-50"
                             >
                               Uložit změny
                             </button>
@@ -1646,34 +1621,34 @@ export default function DashboardPage() {
                       <div key={shift.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-800">
+                            <span className="font-bold text-[#1d1d1f]">
                               {new Date(shift.date).toLocaleDateString("cs-CZ", { weekday: "short", day: "numeric", month: "numeric" })}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 border border-indigo-200 text-indigo-700 font-sans">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.04] border border-black/[0.08] text-[#6e6e73] font-sans">
                               {shift.user.lastName} {shift.user.firstName}
                             </span>
                           </div>
-                          <div className="text-slate-555 font-sans">
-                            Rozsah: <strong className="text-slate-800 font-mono">{shift.startTime} - {shift.endTime}</strong>
+                          <div className="text-[#6e6e73] font-sans">
+                            Rozsah: <strong className="text-[#1d1d1f] font-mono">{shift.startTime} - {shift.endTime}</strong>
                             {shift.note && (
-                              <span className="text-slate-400 block text-[10px] mt-0.5"> Poznámka: {shift.note}</span>
+                              <span className="text-[#86868b] block text-[10px] mt-0.5"> Poznámka: {shift.note}</span>
                             )}
                           </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className="font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded text-[10px]">
+                          <span className="font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px]">
                             {netHours.toFixed(1)} hod (čistý)
                           </span>
                           <button
                             onClick={() => handleStartEditShift(shift)}
-                            className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold px-2 py-1 rounded text-[10px] uppercase font-sans tracking-wide transition-all active:scale-[0.96]"
+                            className="bg-black/[0.04] hover:bg-black/[0.06] border border-black/[0.08] text-[#6e6e73] font-bold px-2 py-1 rounded text-[10px] uppercase font-sans tracking-wide transition-all active:scale-[0.96]"
                           >
                             Upravit
                           </button>
                           <button
                             onClick={() => handleDeleteShift(shift.id)}
-                            className="bg-rose-50 hover:bg-rose-100 border border-rose-250 text-rose-700 font-bold px-2 py-1 rounded text-[10px] uppercase font-sans tracking-wide transition-all active:scale-[0.96]"
+                            className="bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-2 py-1 rounded text-[10px] uppercase font-sans tracking-wide transition-all active:scale-[0.96]"
                           >
                             Smazat
                           </button>
@@ -1693,21 +1668,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-200">
 
             {/* LEFT: Add new employee form */}
-            <div className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
+            <div className="lg:col-span-4 surface card-accent p-6">
 
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-indigo-600" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-[#6e6e73]" />
                 Přidat zaměstnance
               </h3>
 
               <form onSubmit={handleAddEmployee} className="space-y-3">
                 {/* Nahrávání občanského průkazu shodné s Kartou příchodu */}
-                <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-2xl p-4 text-center bg-slate-50 transition-all">
+                <div className="border-2 border-dashed border-black/[0.08] hover:border-black/10 rounded-2xl p-4 text-center bg-black/[0.04] transition-all">
                   {isScanning ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-indigo-650" />
-                      <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider animate-pulse">
+                      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73]" />
+                      <span className="text-[10px] font-mono font-bold text-[#6e6e73] uppercase tracking-wider animate-pulse">
                         Vytěžuji doklad... {scanProgress}%
                       </span>
                     </div>
@@ -1717,29 +1691,29 @@ export default function DashboardPage() {
                         <CheckCircle className="h-4 w-4 shrink-0 text-emerald-500" />
                         <span>Občanský průkaz připraven</span>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-mono truncate max-w-[250px] mx-auto">
+                      <p className="text-[10px] text-[#86868b] font-mono truncate max-w-[250px] mx-auto">
                         {idCardFile.name}
                       </p>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-[10px] text-indigo-600 hover:text-indigo-700 font-bold underline"
+                        className="text-[10px] text-[#6e6e73] hover:text-[#6e6e73] font-bold underline"
                       >
                         Změnit soubor
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-wider">
                         Občanský průkaz (foto/sken) *
                       </p>
-                      <p className="text-[9px] text-slate-400 leading-normal">
+                      <p className="text-[9px] text-[#86868b] leading-normal">
                         Vyfoťte nebo nahrajte doklad pro automatické vyplnění jména.
                       </p>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase tracking-wider transition-all w-full active:scale-[0.98]"
+                        className="inline-flex items-center justify-center gap-1.5 bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold py-2 px-3 rounded-xl text-[10px] uppercase tracking-wider transition-all w-full active:scale-[0.98]"
                       >
                         <Camera className="h-3.5 w-3.5" />
                         Nahrát / Vyfotit doklad
@@ -1758,7 +1732,7 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       Jméno *
                     </label>
                     <input
@@ -1767,11 +1741,11 @@ export default function DashboardPage() {
                       onChange={(e) => setNewEmpFirstName(e.target.value)}
                       placeholder="Jan"
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       Příjmení *
                     </label>
                     <input
@@ -1780,14 +1754,14 @@ export default function DashboardPage() {
                       onChange={(e) => setNewEmpLastName(e.target.value)}
                       placeholder="Novák"
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                 </div>
 
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                     Oddělení *
                   </label>
                   <input
@@ -1796,12 +1770,12 @@ export default function DashboardPage() {
                     onChange={(e) => setNewEmpDepartment(e.target.value)}
                     placeholder="Např. Habartov - Výroba"
                     required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                  <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                     E-mail
                   </label>
                   <input
@@ -1809,17 +1783,17 @@ export default function DashboardPage() {
                     value={newEmpEmail}
                     onChange={(e) => setNewEmpEmail(e.target.value)}
                     placeholder="novak@ept-connector.cz"
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   />
                 </div>
 
-                <div className="border-t border-slate-200 pt-3 mt-1">
-                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">Přihlašovací údaje</p>
+                <div className="border-t border-black/[0.08] pt-3 mt-1">
+                  <p className="text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-2">Přihlašovací údaje</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       Username (login) *
                     </label>
                     <input
@@ -1828,11 +1802,11 @@ export default function DashboardPage() {
                       onChange={(e) => setNewEmpUsername(e.target.value)}
                       placeholder="jnovak"
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       Heslo *
                     </label>
                     <input
@@ -1841,14 +1815,14 @@ export default function DashboardPage() {
                       onChange={(e) => setNewEmpPassword(e.target.value)}
                       placeholder="novak123"
                       required
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       PIN (kiosek)
                     </label>
                     <input
@@ -1857,17 +1831,17 @@ export default function DashboardPage() {
                       onChange={(e) => setNewEmpPin(e.target.value)}
                       placeholder="1234"
                       maxLength={6}
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1">
                       Role
                     </label>
                     <select
                       value={newEmpRole}
                       onChange={(e) => setNewEmpRole(e.target.value)}
-                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-semibold text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                     >
                       <option value="EMPLOYEE">Zaměstnanec</option>
                       <option value="MANAGER">Manažer</option>
@@ -1879,76 +1853,75 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={isUpdating || isScanning}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-widest shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   Přidat zaměstnance
                 </button>
               </form>
 
-              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] text-emerald-800 font-medium leading-relaxed">
+              <div className="mt-4 p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-[10px] text-emerald-700 font-medium leading-relaxed">
                 <strong>Info:</strong> Zaměstnanec se uloží do <code className="font-mono bg-emerald-100 px-1 rounded">.env</code> (přihlašovací údaje) i do <code className="font-mono bg-emerald-100 px-1 rounded">databáze</code> (tabulka users v PgAdmin). Odebrání zaměstnance ho deaktivuje v DB.
               </div>
             </div>
 
             {/* RIGHT: Current employees list */}
-            <div className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-600"></div>
+            <div className="lg:col-span-8 surface card-accent p-6">
 
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2">
-                <Users2 className="h-4 w-4 text-indigo-600" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 flex items-center gap-2">
+                <Users2 className="h-4 w-4 text-[#6e6e73]" />
                 Registrovaní zaměstnanci ({credentialUsers.length})
               </h3>
 
               {credentialUsers.length === 0 ? (
-                <div className="py-20 text-center text-slate-500 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider">
+                <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                   Žádní registrovaní zaměstnanci.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100 max-h-[550px] overflow-y-auto pr-2">
+                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto pr-2">
                   {credentialUsers.map((cred) => {
                     const dbUser = users.find((u) => u.employeeNumber === cred.employeeNumber);
                     return (
                       <div
                         key={cred.username}
                         onClick={() => handleSelectEmployee(cred.username)}
-                        className="py-3.5 flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-slate-50 -mx-2 px-2 rounded-lg transition-colors"
+                        className="py-3.5 flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-black/[0.06] -mx-2 px-2 rounded-lg transition-colors"
                         title="Zobrazit přihlašovací údaje"
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-slate-800">{cred.displayName}</span>
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                            <span className="font-bold text-[#1d1d1f]">{cred.displayName}</span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                               cred.role === "CEO"
-                                ? "bg-amber-50 border border-amber-200 text-amber-800"
+                                ? "bg-amber-500/15 border border-amber-500/30 text-amber-700"
                                 : cred.role === "MANAGER"
-                                ? "bg-sky-50 border border-sky-200 text-sky-800"
-                                : "bg-slate-100 border border-slate-200 text-slate-600"
+                                ? "bg-sky-500/15 border border-sky-500/30 text-sky-700"
+                                : "bg-black/[0.06] border border-black/[0.08] text-[#6e6e73]"
                             }`}>
                               {cred.role}
                             </span>
                             {dbUser && (
-                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-50 border border-indigo-200 text-indigo-700">
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-black/[0.04] border border-black/[0.08] text-[#6e6e73]">
                                 {dbUser.department}
                               </span>
                             )}
                             {dbUser && (
                               <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-rose-50 border border-rose-200 text-rose-700"
+                                true ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-700" : "bg-rose-500/15 border border-rose-500/30 text-rose-700"
                               }`}>
                                 V databázi
                               </span>
                             )}
                             {!dbUser && (
-                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 border border-rose-200 text-rose-700">
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-500/15 border border-rose-500/30 text-rose-700">
                                 Chybí v DB
                               </span>
                             )}
                           </div>
-                          <div className="text-slate-500 font-mono text-[11px]">
-                            Login: <strong className="text-slate-700">{cred.username}</strong>
-                            <span className="text-slate-300 mx-2">|</span>
-                            Osobní č.: <strong className="text-slate-700">{cred.employeeNumber}</strong>
+                          <div className="text-[#6e6e73] font-mono text-[11px]">
+                            Login: <strong className="text-[#1d1d1f]">{cred.username}</strong>
+                            <span className="text-[#86868b] mx-2">|</span>
+                            Osobní č.: <strong className="text-[#1d1d1f]">{cred.employeeNumber}</strong>
                           </div>
                         </div>
 
@@ -1958,7 +1931,7 @@ export default function DashboardPage() {
                             handleRemoveEmployee(cred.username, cred.displayName);
                           }}
                           disabled={isUpdating}
-                          className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 shrink-0"
+                          className="inline-flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 shrink-0"
                         >
                           <Trash2 className="h-3 w-3" />
                           Odebrat
@@ -1985,19 +1958,19 @@ export default function DashboardPage() {
             className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-1 bg-indigo-600" />
-            <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-slate-100">
+            <div className="h-1 bg-[#0071e3]" />
+            <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-black/5">
               <div>
-                <h3 className="text-base font-black text-slate-900">
+                <h3 className="text-base font-bold text-[#1d1d1f]">
                   {selectedCredential.displayName || selectedCredential.username}
                 </h3>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 mt-0.5">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e73] mt-0.5">
                   Přihlašovací údaje (.env)
                 </p>
               </div>
               <button
                 onClick={() => setSelectedCredential(null)}
-                className="text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+                className="text-[#86868b] hover:text-[#1d1d1f] transition-colors shrink-0"
                 aria-label="Zavřít"
               >
                 <X className="h-5 w-5" />
@@ -2005,7 +1978,7 @@ export default function DashboardPage() {
             </div>
 
             {detailLoading ? (
-              <div className="py-16 flex items-center justify-center text-slate-400">
+              <div className="py-16 flex items-center justify-center text-[#86868b]">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
@@ -2028,21 +2001,21 @@ export default function DashboardPage() {
                   },
                 ].map((field) => (
                   <div key={field.key} className="flex items-center gap-3">
-                    <div className="w-32 shrink-0 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="w-32 shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#86868b]">
                       {field.label}
                     </div>
                     <div className="flex-1 flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-sm text-slate-800 truncate">
+                      <span className="font-mono text-sm text-[#1d1d1f] truncate">
                         {field.value
                           ? field.secret && !showPassword
                             ? "•".repeat(Math.max(6, field.value.length))
                             : field.value
-                          : <span className="text-slate-300">—</span>}
+                          : <span className="text-[#86868b]">—</span>}
                       </span>
                       {field.secret && field.value && (
                         <button
                           onClick={() => setShowPassword((v) => !v)}
-                          className="text-slate-400 hover:text-indigo-600 transition-colors shrink-0"
+                          className="text-[#86868b] hover:text-[#6e6e73] transition-colors shrink-0"
                           aria-label={showPassword ? "Skrýt" : "Zobrazit"}
                         >
                           {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -2051,7 +2024,7 @@ export default function DashboardPage() {
                       {field.copy && field.value && (
                         <button
                           onClick={() => handleCopy(field.key, field.value)}
-                          className="text-slate-400 hover:text-indigo-600 transition-colors shrink-0"
+                          className="text-[#86868b] hover:text-[#6e6e73] transition-colors shrink-0"
                           aria-label="Kopírovat"
                         >
                           {copiedField === field.key ? (
@@ -2067,14 +2040,14 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <div className="px-6 py-4 bg-black/[0.04] border-t border-black/5 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
                 <KeyRound className="h-3 w-3" />
                 Citlivé údaje
               </span>
               <button
                 onClick={() => setSelectedCredential(null)}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wide transition-all active:scale-[0.97]"
+                className="bg-black/[0.06] hover:bg-black/[0.08] border border-black/[0.08] text-[#1d1d1f] font-bold px-4 py-2 rounded-lg text-xs uppercase tracking-wide transition-all active:scale-[0.97]"
               >
                 Zavřít
               </button>
@@ -2086,19 +2059,19 @@ export default function DashboardPage() {
       {/* Floating Chatbot Widget */}
       <div className="fixed bottom-6 right-6 z-50 font-sans">
         {isChatOpen ? (
-          <div className="bg-white/95 backdrop-blur-md w-80 sm:w-96 h-[500px] rounded-2xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+          <div className="bg-white/95 backdrop-blur-md w-80 sm:w-96 h-[500px] rounded-2xl border border-black/[0.08] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
             {/* Header */}
-            <div className="bg-indigo-600 px-4 py-3 text-white flex items-center justify-between shadow-sm">
+            <div className="bg-[#0071e3] px-4 py-3 text-white flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-indigo-100 animate-pulse" />
+                <Bot className="h-5 w-5 text-[#1d1d1f] animate-pulse" />
                 <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider">CHECKNI TO AI</h4>
-                  <span className="text-[9px] text-indigo-200 font-bold block">Online asistent docházky</span>
+                  <h4 className="text-xs font-bold uppercase tracking-wider">CHECKNI TO AI</h4>
+                  <span className="text-[9px] text-[#1d1d1f] font-bold block">Online asistent docházky</span>
                 </div>
               </div>
               <button 
                 onClick={() => setIsChatOpen(false)}
-                className="text-white/80 hover:text-white hover:bg-indigo-700/50 p-1 rounded-lg transition-colors"
+                className="text-white/80 hover:text-white hover:bg-[#0077ed]/50 p-1 rounded-lg transition-colors"
                 aria-label="Zavřít chat"
               >
                 <X className="h-4 w-4" />
@@ -2106,7 +2079,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Messages Viewport */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/[0.04]">
               {chatMessages.map((msg, index) => {
                 const isUser = msg.role === "user";
                 return (
@@ -2117,8 +2090,8 @@ export default function DashboardPage() {
                     <div 
                       className={`px-3 py-2 rounded-2xl text-[11px] shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
                         isUser 
-                          ? "bg-indigo-600 text-white rounded-tr-none animate-in fade-in duration-200" 
-                          : "bg-white border border-slate-200 text-slate-800 rounded-tl-none animate-in fade-in duration-200"
+                          ? "bg-[#0071e3] text-white rounded-tr-none animate-in fade-in duration-200" 
+                          : "bg-white border border-black/[0.08] text-[#1d1d1f] rounded-tl-none animate-in fade-in duration-200"
                       }`}
                     >
                       {isUser ? msg.content : renderMarkdown(msg.content)}
@@ -2128,14 +2101,14 @@ export default function DashboardPage() {
               })}
               
               {isChatLoading && (
-                <div className="flex items-center gap-2 text-slate-400 bg-white border border-slate-150 px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
+                <div className="flex items-center gap-2 text-[#86868b] bg-white border border-black/5 px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#6e6e73]" />
                   <span>AI píše...</span>
                 </div>
               )}
 
               {chatError && (
-                <div className="bg-rose-50 border border-rose-250 text-rose-800 px-3 py-2 rounded-xl text-[10px] font-bold leading-normal">
+                <div className="bg-rose-500/15 border border-rose-500/30 text-rose-700 px-3 py-2 rounded-xl text-[10px] font-bold leading-normal">
                   Chyba: {chatError}
                 </div>
               )}
@@ -2144,7 +2117,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Prompts Panel */}
-            <div className="px-3 py-2 border-t border-slate-100 bg-white flex flex-wrap gap-1.5 shrink-0 select-none">
+            <div className="px-3 py-2 border-t border-black/5 bg-white flex flex-wrap gap-1.5 shrink-0 select-none">
               {[
                 "Kdo je teď v budově?",
                 "Ukaž dnešní směny",
@@ -2155,7 +2128,7 @@ export default function DashboardPage() {
                   type="button"
                   disabled={isChatLoading}
                   onClick={() => handleSendChatMessage(promptText)}
-                  className="bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 font-bold px-2 py-1 rounded-lg text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                  className="bg-black/[0.04] hover:bg-black/[0.04] border border-black/[0.08] hover:border-black/10 text-[#1d1d1f] hover:text-[#6e6e73] font-bold px-2 py-1 rounded-lg text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
                 >
                   {promptText}
                 </button>
@@ -2165,7 +2138,7 @@ export default function DashboardPage() {
             {/* Input Form */}
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }}
-              className="p-3 border-t border-slate-200 bg-white flex gap-2 items-center shrink-0"
+              className="p-3 border-t border-black/[0.08] bg-white flex gap-2 items-center shrink-0"
             >
               <input
                 type="text"
@@ -2173,12 +2146,12 @@ export default function DashboardPage() {
                 onChange={(e) => setChatInput(e.target.value)}
                 disabled={isChatLoading}
                 placeholder="Zeptejte se asistenta..."
-                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-800"
+                className="flex-1 px-3 py-2 bg-black/[0.04] border border-black/[0.08] rounded-xl text-[11px] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] text-[#1d1d1f]"
               />
               <button
                 type="submit"
                 disabled={isChatLoading || !chatInput.trim()}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white p-2.5 rounded-xl transition-all active:scale-[0.96] flex items-center justify-center shrink-0"
+                className="bg-[#0071e3] hover:bg-[#0077ed] disabled:opacity-40 text-white p-2.5 rounded-xl transition-all active:scale-[0.96] flex items-center justify-center shrink-0"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
@@ -2187,7 +2160,7 @@ export default function DashboardPage() {
         ) : (
           <button
             onClick={() => setIsChatOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 font-bold text-xs uppercase tracking-wider z-50 relative group"
+            className="glass-liquid text-[#1d1d1f] rounded-full p-4 hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 font-bold text-xs uppercase tracking-wider z-50 relative group"
           >
             <Bot className="h-5 w-5 animate-pulse" />
             <span>AI Asistent</span>
