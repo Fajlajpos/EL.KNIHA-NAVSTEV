@@ -17,7 +17,7 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "CHECKNI TO | Elektronická kniha návštěv & docházka",
-  description: "Minimalistická a bezpečná kniha návštěv a docházkový systém pro ept connector s.r.o.",
+  description: "Minimalistická a bezpečná elektronická kniha návštěv a docházkový systém.",
 };
 
 export default function RootLayout({

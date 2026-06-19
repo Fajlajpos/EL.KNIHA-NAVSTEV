@@ -68,7 +68,7 @@ function LoginContent() {
           </div>
           <div className="space-y-1">
             <h2 className="text-xs font-black tracking-widest text-slate-900 uppercase">Elektronický Docházkový Systém</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ept connector s.r.o.</p>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Elektronická Kniha & Docházka</p>
           </div>
         </div>
 

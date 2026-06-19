@@ -332,7 +332,7 @@ export default function KioskPage() {
             <Clock className="h-5 w-5 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-md font-black tracking-wider text-slate-900 uppercase">ept connector s.r.o.</h1>
+            <h1 className="text-md font-black tracking-wider text-slate-900 uppercase">Elektronický Terminál</h1>
             <p className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest">Kioskový terminál</p>
           </div>
         </div>
@@ -686,7 +686,7 @@ export default function KioskPage() {
 
       {/* Footer Branding */}
       <footer className="bg-white border-t border-slate-200 py-4 px-8 text-center text-[10px] text-slate-400 font-semibold tracking-wider uppercase shadow-inner">
-        © 2026 ept connector s.r.o. • Všechna práva vyhrazena
+        © 2026 Elektronická kniha návštěv & docházka • Všechna práva vyhrazena
       </footer>
 
     </div>

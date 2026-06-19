@@ -21,6 +21,8 @@ import {
   X,
   KeyRound,
   Camera,
+  Bot,
+  Send,
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 
@@ -212,6 +214,124 @@ interface Shift {
 
 export default function DashboardPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // AI Chatbot States
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
+    { role: "assistant", content: "Ahoj! Jsem Váš inteligentní asistent **CHECKNI TO AI** pro naši společnost.\n\nPřipojil jsem se k firemní databázi a jsem připraven Vám pomoci. Můžete se mě zeptat na cokoliv ohledně přítomných osob, směn, nebo docházkových logů.\n\n*Vyzkoušejte rychlé dotazy dole!*" }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, isChatOpen]);
+
+  const handleSendChatMessage = async (textToSend?: string) => {
+    const messageText = textToSend || chatInput;
+    if (!messageText.trim()) return;
+
+    const userMessage = { role: "user" as const, content: messageText };
+    setChatMessages((prev) => [...prev, userMessage]);
+    setChatInput("");
+    setIsChatLoading(true);
+    setChatError(null);
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [...chatMessages, userMessage] }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Nepodařilo se komunikovat s AI.");
+      }
+
+      if (!res.body) {
+        throw new Error("Odpověď neobsahuje textový stream.");
+      }
+
+      // Vložíme prázdnou zprávu asistenta, do které budeme streamovat
+      setChatMessages((prev) => [...prev, { role: "assistant" as const, content: "" }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const token = decoder.decode(value, { stream: true });
+        streamedText += token;
+
+        setChatMessages((prev) => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: streamedText,
+            };
+          }
+          return updated;
+        });
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : "Chyba spojení s AI.";
+      setChatError(errMsg);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const renderMarkdown = (text: string) => {
+    const lines = text.split("\n");
+    return lines.map((line, idx) => {
+      let content: React.ReactNode = line;
+
+      // Table formatting check
+      if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+        const cells = line.split("|").map(c => c.trim()).filter(c => c !== "");
+        if (line.includes("---")) return null;
+        return (
+          <div key={idx} className="flex border-b border-slate-200 py-1 font-mono text-[9px] divide-x divide-slate-100">
+            {cells.map((cell, cIdx) => (
+              <span key={cIdx} className="flex-1 px-1 truncate font-bold text-slate-800">{cell}</span>
+            ))}
+          </div>
+        );
+      }
+
+      // Check bullet list
+      if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+        const rawContent = line.replace(/^[-*]\s+/, "");
+        let itemContent: React.ReactNode = rawContent;
+        if (rawContent.includes("**")) {
+          const parts = rawContent.split("**");
+          itemContent = parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold text-slate-900">{part}</strong> : part);
+        }
+        content = (
+          <li key={idx} className="list-disc list-inside ml-1 my-0.5 text-slate-700">
+            {itemContent}
+          </li>
+        );
+      } else if (typeof content === "string" && content.includes("**")) {
+        const parts = content.split("**");
+        content = parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="font-bold text-slate-950">{part}</strong> : part);
+      }
+
+      return <div key={idx} className="min-h-[1.25em]">{content}</div>;
+    });
+  };
   const [liveOccupants, setLiveOccupants] = useState<{ visitors: LiveOccupant[]; employees: LiveOccupant[] }>({
     visitors: [],
     employees: [],
@@ -895,7 +1015,7 @@ export default function DashboardPage() {
             <div className="h-6 w-[1px] bg-slate-200 hidden sm:block"></div>
             <div>
               <h1 className="text-md font-black tracking-widest text-slate-900 uppercase">CEO MANAGEMENT DASHBOARD</h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">ept connector s.r.o.</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Elektronická Kniha & Docházka</p>
             </div>
           </div>
 
@@ -1962,6 +2082,119 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Floating Chatbot Widget */}
+      <div className="fixed bottom-6 right-6 z-50 font-sans">
+        {isChatOpen ? (
+          <div className="bg-white/95 backdrop-blur-md w-80 sm:w-96 h-[500px] rounded-2xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+            {/* Header */}
+            <div className="bg-indigo-600 px-4 py-3 text-white flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-indigo-100 animate-pulse" />
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider">CHECKNI TO AI</h4>
+                  <span className="text-[9px] text-indigo-200 font-bold block">Online asistent docházky</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsChatOpen(false)}
+                className="text-white/80 hover:text-white hover:bg-indigo-700/50 p-1 rounded-lg transition-colors"
+                aria-label="Zavřít chat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Messages Viewport */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+              {chatMessages.map((msg, index) => {
+                const isUser = msg.role === "user";
+                return (
+                  <div 
+                    key={index}
+                    className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+                  >
+                    <div 
+                      className={`px-3 py-2 rounded-2xl text-[11px] shadow-sm max-w-[85%] leading-relaxed whitespace-pre-wrap ${
+                        isUser 
+                          ? "bg-indigo-600 text-white rounded-tr-none animate-in fade-in duration-200" 
+                          : "bg-white border border-slate-200 text-slate-800 rounded-tl-none animate-in fade-in duration-200"
+                      }`}
+                    >
+                      {isUser ? msg.content : renderMarkdown(msg.content)}
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {isChatLoading && (
+                <div className="flex items-center gap-2 text-slate-400 bg-white border border-slate-150 px-3 py-2 rounded-2xl rounded-tl-none max-w-[50%] shadow-sm self-start text-[11px] font-medium animate-pulse">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
+                  <span>AI píše...</span>
+                </div>
+              )}
+
+              {chatError && (
+                <div className="bg-rose-50 border border-rose-250 text-rose-800 px-3 py-2 rounded-xl text-[10px] font-bold leading-normal">
+                  Chyba: {chatError}
+                </div>
+              )}
+
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick Prompts Panel */}
+            <div className="px-3 py-2 border-t border-slate-100 bg-white flex flex-wrap gap-1.5 shrink-0 select-none">
+              {[
+                "Kdo je teď v budově?",
+                "Ukaž dnešní směny",
+                "Máme nějaké anomálie?"
+              ].map((promptText) => (
+                <button
+                  key={promptText}
+                  type="button"
+                  disabled={isChatLoading}
+                  onClick={() => handleSendChatMessage(promptText)}
+                  className="bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 font-bold px-2 py-1 rounded-lg text-[9px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                >
+                  {promptText}
+                </button>
+              ))}
+            </div>
+
+            {/* Input Form */}
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSendChatMessage(); }}
+              className="p-3 border-t border-slate-200 bg-white flex gap-2 items-center shrink-0"
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={isChatLoading}
+                placeholder="Zeptejte se asistenta..."
+                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] placeholder-slate-400 focus:outline-none focus:border-indigo-500 text-slate-800"
+              />
+              <button
+                type="submit"
+                disabled={isChatLoading || !chatInput.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white p-2.5 rounded-xl transition-all active:scale-[0.96] flex items-center justify-center shrink-0"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-2 font-bold text-xs uppercase tracking-wider z-50 relative group"
+          >
+            <Bot className="h-5 w-5 animate-pulse" />
+            <span>AI Asistent</span>
+            <span className="absolute -top-1 -right-1 h-3 w-3 bg-rose-500 rounded-full border-2 border-white animate-bounce"></span>
+          </button>
+        )}
+      </div>
 
     </div>
   );
