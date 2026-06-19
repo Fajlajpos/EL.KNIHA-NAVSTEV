@@ -1009,10 +1009,6 @@ export default function DashboardPage() {
       <header className="lg:sticky lg:top-0 z-30 glass-bar border-b border-black/[0.08] px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain" />
-            </div>
             <div>
               <p className="eyebrow">Management</p>
               <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">CEO Dashboard</h1>

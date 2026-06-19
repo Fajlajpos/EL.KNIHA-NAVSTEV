@@ -494,10 +494,6 @@ export default function Home() {
 
           {/* Page title */}
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain" />
-            </div>
             <div>
               <p className="eyebrow">Recepce</p>
               <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Kniha návštěv</h1>

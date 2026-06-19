@@ -327,10 +327,6 @@ export default function KioskPage() {
       {/* Kiosk Header */}
       <header className="glass-bar border-b border-black/[0.08] px-8 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-white border border-black/[0.08] flex items-center justify-center shadow-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo-mark-dark.png" alt="Checkni.to" className="h-8 w-auto object-contain" />
-          </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-[#1d1d1f]">Elektronický terminál</h1>
             <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Checkni.to • Docházka</p>

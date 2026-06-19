@@ -80,7 +80,8 @@ export default function Sidebar({
 
       <aside
         className={`fixed top-0 left-0 z-50 h-screen w-[var(--sidebar-w)] flex flex-col
-        bg-[#f5f5f7]/70 backdrop-blur-3xl border-r border-black/[0.04] transition-transform duration-300
+        bg-gradient-to-b from-white/70 to-white/45 backdrop-blur-3xl border-r border-white/70
+        shadow-[inset_-1px_0_0_rgba(255,255,255,0.45),0_0_20px_rgba(0,0,0,0.01)] transition-transform duration-300
         lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Brand */}
@@ -111,13 +112,17 @@ export default function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onClose}
-                className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${
+                className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-bold transition-all border relative ${
                   isActive
-                    ? "bg-[#0071e3] text-white shadow-[0_4px_12px_rgba(0,113,227,0.22)]"
-                    : "text-[#6e6e73] hover:bg-black/[0.03] hover:text-[#1d1d1f]"
+                    ? "bg-gradient-to-b from-white/95 to-white/80 border-white/90 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_12px_rgba(0,113,227,0.06)] text-[#0071e3]"
+                    : "border-transparent text-[#6e6e73] hover:bg-white/40 hover:text-[#1d1d1f]"
                 }`}
               >
-                <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-white" : "text-[#86868b] group-hover:text-[#1d1d1f] transition-colors"}`} />
+                {/* 3D Glass pill sheen dome overlay for active list item */}
+                {isActive && (
+                  <span className="absolute top-0.5 left-0.5 right-0.5 height-[45%] bg-gradient-to-b from-white/80 to-white/5 rounded-t-xl pointer-events-none" />
+                )}
+                <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-[#0071e3]" : "text-[#86868b] group-hover:text-[#1d1d1f] transition-colors"}`} />
                 <span className="truncate">{item.name}</span>
               </Link>
             );
@@ -127,7 +132,7 @@ export default function Sidebar({
         {/* Profil + odhlášení */}
         {userRole && (
           <div className="p-4 space-y-2">
-            <div className="flex items-center gap-3 rounded-2xl bg-white/50 backdrop-blur-md border border-white/80 px-3.5 py-2.5 shadow-sm">
+            <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-b from-white/75 to-white/50 border border-white/80 px-3.5 py-2.5 shadow-sm">
               <div
                 className="h-9 w-9 rounded-xl flex items-center justify-center text-[#0071e3] font-bold text-sm shrink-0"
                 style={{ background: "rgba(0,113,227,0.08)", border: "1px solid rgba(0,113,227,0.15)" }}

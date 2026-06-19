@@ -15,7 +15,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isStandalone = pathname?.startsWith("/login") || pathname?.startsWith("/kiosk");
+  const isStandalone = pathname?.startsWith("/login");
 
   if (isStandalone) {
     return (
