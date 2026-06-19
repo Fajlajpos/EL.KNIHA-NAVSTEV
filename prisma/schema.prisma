@@ -83,7 +83,7 @@ model User {
   approvedCorrections CorrectionRequest[] @relation("ApprovedByCorrection")
   shifts           Shift[]             @relation("UserShifts")
 
-  @@map("users")
+  @@map("zamestnanci")
 }
 
 model AttendanceLog {

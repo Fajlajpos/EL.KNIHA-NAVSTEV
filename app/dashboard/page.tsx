@@ -110,6 +110,11 @@ export default function DashboardPage() {
   const [newEmpDisplayName, setNewEmpDisplayName] = useState("");
   const [newEmpRole, setNewEmpRole] = useState("EMPLOYEE");
   const [newEmpNumber, setNewEmpNumber] = useState("");
+  const [newEmpFirstName, setNewEmpFirstName] = useState("");
+  const [newEmpLastName, setNewEmpLastName] = useState("");
+  const [newEmpDepartment, setNewEmpDepartment] = useState("");
+  const [newEmpEmail, setNewEmpEmail] = useState("");
+  const [newEmpPin, setNewEmpPin] = useState("");
 
   // Auth Verification
   useEffect(() => {
@@ -373,32 +378,43 @@ export default function DashboardPage() {
   // Handle adding a new employee credential
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmpUsername || !newEmpPassword || !newEmpDisplayName || !newEmpNumber) {
-      setStatusMsg({ text: "Vyplňte všechna pole.", error: true });
+    if (!newEmpUsername || !newEmpPassword || !newEmpFirstName || !newEmpLastName || !newEmpNumber || !newEmpDepartment) {
+      setStatusMsg({ text: "Vyplňte všechna povinná pole.", error: true });
       return;
     }
     setIsUpdating(true);
     setStatusMsg(null);
     try {
+      const displayName = `${newEmpFirstName} ${newEmpLastName}`;
       const res = await fetch("/api/auth/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: newEmpUsername,
           password: newEmpPassword,
-          displayName: newEmpDisplayName,
+          displayName,
           role: newEmpRole,
           employeeNumber: newEmpNumber,
+          firstName: newEmpFirstName,
+          lastName: newEmpLastName,
+          department: newEmpDepartment,
+          email: newEmpEmail || null,
+          pin: newEmpPin || null,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setStatusMsg({ text: `Zaměstnanec ${newEmpDisplayName} byl přidán do systému.`, error: false });
+        setStatusMsg({ text: `Zaměstnanec ${displayName} byl přidán do systému i databáze.`, error: false });
         setNewEmpUsername("");
         setNewEmpPassword("");
         setNewEmpDisplayName("");
         setNewEmpRole("EMPLOYEE");
         setNewEmpNumber("");
+        setNewEmpFirstName("");
+        setNewEmpLastName("");
+        setNewEmpDepartment("");
+        setNewEmpEmail("");
+        setNewEmpPin("");
         loadDashboardData();
       } else {
         setStatusMsg({ text: data.error || "Chyba při přidávání.", error: true });
@@ -1064,52 +1080,39 @@ export default function DashboardPage() {
                 Přidat zaměstnance
               </h3>
 
-              <form onSubmit={handleAddEmployee} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                    Uživatelské jméno (login)
-                  </label>
-                  <input
-                    type="text"
-                    value={newEmpUsername}
-                    onChange={(e) => setNewEmpUsername(e.target.value)}
-                    placeholder="Např. jnovak"
-                    required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
-                  />
+              <form onSubmit={handleAddEmployee} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Jméno *
+                    </label>
+                    <input
+                      type="text"
+                      value={newEmpFirstName}
+                      onChange={(e) => setNewEmpFirstName(e.target.value)}
+                      placeholder="Jan"
+                      required
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Příjmení *
+                    </label>
+                    <input
+                      type="text"
+                      value={newEmpLastName}
+                      onChange={(e) => setNewEmpLastName(e.target.value)}
+                      placeholder="Novák"
+                      required
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                    Heslo
-                  </label>
-                  <input
-                    type="text"
-                    value={newEmpPassword}
-                    onChange={(e) => setNewEmpPassword(e.target.value)}
-                    placeholder="Heslo pro přihlášení"
-                    required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                    Celé jméno
-                  </label>
-                  <input
-                    type="text"
-                    value={newEmpDisplayName}
-                    onChange={(e) => setNewEmpDisplayName(e.target.value)}
-                    placeholder="Např. Jan Novák"
-                    required
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                    Osobní číslo
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Osobní číslo *
                   </label>
                   <input
                     type="text"
@@ -1122,17 +1125,93 @@ export default function DashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                    Role
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Oddělení *
                   </label>
-                  <select
-                    value={newEmpRole}
-                    onChange={(e) => setNewEmpRole(e.target.value)}
-                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
-                  >
-                    <option value="EMPLOYEE">Zaměstnanec</option>
-                    <option value="CEO">Ředitel (CEO)</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={newEmpDepartment}
+                    onChange={(e) => setNewEmpDepartment(e.target.value)}
+                    placeholder="Např. Habartov - Výroba"
+                    required
+                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={newEmpEmail}
+                    onChange={(e) => setNewEmpEmail(e.target.value)}
+                    placeholder="novak@ept-connector.cz"
+                    className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="border-t border-slate-200 pt-3 mt-1">
+                  <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-2">Přihlašovací údaje</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Username (login) *
+                    </label>
+                    <input
+                      type="text"
+                      value={newEmpUsername}
+                      onChange={(e) => setNewEmpUsername(e.target.value)}
+                      placeholder="jnovak"
+                      required
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Heslo *
+                    </label>
+                    <input
+                      type="text"
+                      value={newEmpPassword}
+                      onChange={(e) => setNewEmpPassword(e.target.value)}
+                      placeholder="novak123"
+                      required
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      PIN (kiosek)
+                    </label>
+                    <input
+                      type="text"
+                      value={newEmpPin}
+                      onChange={(e) => setNewEmpPin(e.target.value)}
+                      placeholder="1234"
+                      maxLength={6}
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      Role
+                    </label>
+                    <select
+                      value={newEmpRole}
+                      onChange={(e) => setNewEmpRole(e.target.value)}
+                      className="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-indigo-500"
+                    >
+                      <option value="EMPLOYEE">Zaměstnanec</option>
+                      <option value="MANAGER">Manažer</option>
+                      <option value="CEO">Ředitel (CEO)</option>
+                    </select>
+                  </div>
                 </div>
 
                 <button
@@ -1145,8 +1224,8 @@ export default function DashboardPage() {
                 </button>
               </form>
 
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[10px] text-amber-800 font-medium leading-relaxed">
-                <strong>Poznámka:</strong> Přihlašovací údaje se ukládají přímo do souboru <code className="font-mono bg-amber-100 px-1 rounded">.env</code> na serveru. Změny se projeví okamžitě.
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[10px] text-emerald-800 font-medium leading-relaxed">
+                <strong>Info:</strong> Zaměstnanec se uloží do <code className="font-mono bg-emerald-100 px-1 rounded">.env</code> (přihlašovací údaje) i do <code className="font-mono bg-emerald-100 px-1 rounded">databáze</code> (tabulka users v PgAdmin). Odebrání zaměstnance ho deaktivuje v DB.
               </div>
             </div>
 
@@ -1165,36 +1244,58 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100 max-h-[550px] overflow-y-auto pr-2">
-                  {credentialUsers.map((cred) => (
-                    <div key={cred.username} className="py-3.5 flex items-center justify-between gap-4 text-xs">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800">{cred.displayName}</span>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                            cred.role === "CEO"
-                              ? "bg-amber-50 border border-amber-200 text-amber-800"
-                              : "bg-slate-100 border border-slate-200 text-slate-600"
-                          }`}>
-                            {cred.role}
-                          </span>
+                  {credentialUsers.map((cred) => {
+                    const dbUser = users.find((u) => u.employeeNumber === cred.employeeNumber);
+                    return (
+                      <div key={cred.username} className="py-3.5 flex items-center justify-between gap-4 text-xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-slate-800">{cred.displayName}</span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                              cred.role === "CEO"
+                                ? "bg-amber-50 border border-amber-200 text-amber-800"
+                                : cred.role === "MANAGER"
+                                ? "bg-sky-50 border border-sky-200 text-sky-800"
+                                : "bg-slate-100 border border-slate-200 text-slate-600"
+                            }`}>
+                              {cred.role}
+                            </span>
+                            {dbUser && (
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-50 border border-indigo-200 text-indigo-700">
+                                {dbUser.department}
+                              </span>
+                            )}
+                            {dbUser && (
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                true ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-rose-50 border border-rose-200 text-rose-700"
+                              }`}>
+                                V databázi
+                              </span>
+                            )}
+                            {!dbUser && (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-50 border border-rose-200 text-rose-700">
+                                Chybí v DB
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-slate-500 font-mono text-[11px]">
+                            Login: <strong className="text-slate-700">{cred.username}</strong>
+                            <span className="text-slate-300 mx-2">|</span>
+                            Osobní č.: <strong className="text-slate-700">{cred.employeeNumber}</strong>
+                          </div>
                         </div>
-                        <div className="text-slate-500 font-mono text-[11px]">
-                          Login: <strong className="text-slate-700">{cred.username}</strong>
-                          <span className="text-slate-300 mx-2">|</span>
-                          Osobní č.: <strong className="text-slate-700">{cred.employeeNumber}</strong>
-                        </div>
-                      </div>
 
-                      <button
-                        onClick={() => handleRemoveEmployee(cred.username, cred.displayName)}
-                        disabled={isUpdating}
-                        className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Odebrat
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          onClick={() => handleRemoveEmployee(cred.username, cred.displayName)}
+                          disabled={isUpdating}
+                          className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 shrink-0"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Odebrat
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

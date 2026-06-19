@@ -7,105 +7,68 @@ function hashPin(pin: string): string {
   return crypto.createHash("sha256").update(pin).digest("hex");
 }
 
-// Automatic Seed Data
-const SEED_USERS = [
-  {
-    employeeNumber: "1001",
-    firstName: "Petr",
-    lastName: "Bureš",
-    email: "bures@ept-connector.cz",
-    department: "Svatava - Management",
-    role: "CEO",
-    pin: "1111",
-    rfidCardUid: "999901",
-    hourlyFund: 40.0,
-  },
-  {
-    employeeNumber: "2001",
-    firstName: "Jan",
-    lastName: "Novák",
-    email: "novak@ept-connector.cz",
-    department: "Habartov - Výroba",
-    role: "MANAGER",
-    pin: "2222",
-    rfidCardUid: "999902",
-    hourlyFund: 40.0,
-  },
-  {
-    employeeNumber: "2002",
-    firstName: "Martin",
-    lastName: "Dvořák",
-    email: "dvorak@ept-connector.cz",
-    department: "Svatava - Sklad",
-    role: "MANAGER",
-    pin: "3333",
-    rfidCardUid: "999903",
-    hourlyFund: 40.0,
-  },
-  {
-    employeeNumber: "3001",
-    firstName: "Lucie",
-    lastName: "Králová",
-    email: "kralova@ept-connector.cz",
-    department: "Habartov - THP",
-    role: "EMPLOYEE",
-    pin: "4444",
-    rfidCardUid: "999904",
-    hourlyFund: 37.5,
-  },
-  {
-    employeeNumber: "4001",
-    firstName: "Josef",
-    lastName: "Marek",
-    email: "marek@ept-connector.cz",
-    department: "Svatava - Výroba",
-    role: "EMPLOYEE",
-    pin: "5555",
-    rfidCardUid: "123456",
-    hourlyFund: 40.0,
-  },
-  {
-    employeeNumber: "4002",
-    firstName: "Jana",
-    lastName: "Svobodová",
-    email: "svobodova@ept-connector.cz",
-    department: "Habartov - Výroba",
-    role: "EMPLOYEE",
-    pin: "6666",
-    rfidCardUid: "789012",
-    hourlyFund: 40.0,
-  },
-];
+interface EnvUser {
+  username: string;
+  password: string;
+  displayName: string;
+  role: string;
+  employeeNumber: string;
+  firstName?: string;
+  lastName?: string;
+  department?: string;
+  email?: string;
+  pin?: string;
+  hourlyFund?: number;
+}
+
+function getEnvUsers(): EnvUser[] {
+  try {
+    const raw = process.env.USERS_CREDENTIALS || "[]";
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
 
 export async function GET() {
   try {
     let users = await prisma.user.findMany({
+      where: { isActive: true },
       orderBy: [
         { department: "asc" },
         { lastName: "asc" },
       ],
     });
 
-    // Auto-seed if database is empty
+    // Auto-sync: if DB is empty, seed from .env credentials
     if (users.length === 0) {
-      console.log("Seeding employee directory database...");
-      for (const u of SEED_USERS) {
+      console.log("Syncing employees from .env to database...");
+      const envUsers = getEnvUsers();
+
+      for (const u of envUsers) {
+        // Parse name from displayName if firstName/lastName not provided
+        const nameParts = u.displayName.split(" ");
+        const firstName = u.firstName || nameParts[0] || "Unknown";
+        const lastName = u.lastName || nameParts.slice(1).join(" ") || "Unknown";
+
         await prisma.user.create({
           data: {
             employeeNumber: u.employeeNumber,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            email: u.email,
-            department: u.department,
-            role: u.role as Role,
-            pinHash: hashPin(u.pin),
-            rfidCardUid: u.rfidCardUid,
-            hourlyFund: u.hourlyFund,
+            firstName,
+            lastName,
+            email: u.email || null,
+            department: u.department || "Nezařazeno",
+            role: (u.role || "EMPLOYEE") as Role,
+            pinHash: u.pin ? hashPin(u.pin) : null,
+            rfidCardUid: null,
+            hourlyFund: u.hourlyFund ?? 40.0,
             isActive: true,
           },
         });
       }
+
       users = await prisma.user.findMany({
+        where: { isActive: true },
         orderBy: [
           { department: "asc" },
           { lastName: "asc" },
