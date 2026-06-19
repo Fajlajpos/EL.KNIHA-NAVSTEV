@@ -86,13 +86,13 @@ export default function Sidebar({
       >
         {/* Brand */}
         <div className="flex items-center justify-between px-6 h-20 shrink-0">
-          <Link href={userRole === "EMPLOYEE" ? "/portal" : "/"} className="flex items-center gap-2.5" onClick={onClose}>
+          <Link href={userRole === "EMPLOYEE" ? "/portal" : "/"} className="flex items-center gap-2.5 group" onClick={onClose}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <div className="logo-liquid-glass-container h-8">
-              <img src="/logo-mark-dark.png" alt="" className="h-8 w-auto object-contain relative z-10" />
-              <div className="logo-liquid-glass-sheen" />
-              <div className="logo-liquid-glass-highlight" />
-            </div>
+            <img 
+              src="/logo-mark-dark.png" 
+              alt="" 
+              className="h-8 w-auto object-contain transition-all duration-300 group-hover:scale-105 group-hover:brightness-110" 
+            />
             <span className="text-base font-bold tracking-tight text-[#1d1d1f]">
               Checkni<span className="text-[#86868b]">.to</span>
             </span>

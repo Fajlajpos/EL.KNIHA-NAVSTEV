@@ -172,17 +172,45 @@ body {
 
   /* KPI dlaždice — liquid glass */
   .stat-card {
-    @apply p-5 flex flex-col gap-3 rounded-3xl relative overflow-hidden;
+    @apply p-5 flex flex-col gap-3 rounded-3xl relative overflow-hidden cursor-pointer select-none;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 100%);
     backdrop-filter: blur(28px) saturate(200%) brightness(1.03);
     -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.03);
     border: 1px solid var(--glass-edge);
     box-shadow: var(--shadow-glass);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+  }
+  /* Speculární horní lesk */
+  .stat-card::before {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    right: 2px;
+    height: 35%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 24px 24px 0 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  /* Přejezd lesku při najetí (shimmer) */
+  .stat-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: translateX(-150%) skewX(-25deg);
+    transition: transform 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .stat-card:hover::after {
+    transform: translateX(150%) skewX(-25deg);
   }
   .stat-card:hover {
     transform: translateY(-4px) scale(1.02);
     border-color: rgba(255, 255, 255, 0.95);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.45) 100%);
     box-shadow: 
       inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
       inset 0 -1.5px 2px rgba(255, 255, 255, 0.55),
@@ -496,52 +524,6 @@ body {
     background: rgba(0, 113, 227, 0.08);
     border: 1px solid rgba(0, 113, 227, 0.18);
     box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.8);
-  }
-
-  /* ---------- LOGO LIQUID GLASS ---------- */
-  .logo-liquid-glass-container {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .logo-liquid-glass-sheen,
-  .logo-liquid-glass-highlight {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    mask-image: url("/logo-mark-dark.png");
-    -webkit-mask-image: url("/logo-mark-dark.png");
-    mask-size: contain;
-    -webkit-mask-size: contain;
-    mask-repeat: no-repeat;
-    -webkit-mask-repeat: no-repeat;
-    mask-position: center;
-    -webkit-mask-position: center;
-  }
-  .logo-liquid-glass-sheen {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(0, 0, 0, 0.25) 100%);
-    mix-blend-mode: overlay;
-    z-index: 12;
-  }
-  .logo-liquid-glass-highlight {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 45%);
-    mix-blend-mode: screen;
-    z-index: 13;
-  }
-  .logo-liquid-glass-container::after {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 3.5px;
-    height: 3.5px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 50%;
-    filter: blur(0.2px);
-    z-index: 14;
-    pointer-events: none;
-    box-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
   }
 
   /* ---------- ROUNDED TABLE ROW HOVER ---------- */
