@@ -54,7 +54,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="app-bg min-h-screen flex items-center justify-center p-6 font-sans relative">
+    <div className="min-h-screen flex items-center justify-center p-6 font-sans relative">
       <div className="w-full max-w-md">
         {/* Brand nad kartou */}
         <div className="text-center mb-6 animate-rise">

@@ -74,6 +74,7 @@ export default function Sidebar({
         className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
+        style={{ WebkitBackdropFilter: "blur(4px)" }}
       />
 
       <aside
@@ -81,6 +82,7 @@ export default function Sidebar({
         bg-gradient-to-b from-white/70 to-white/45 backdrop-blur-3xl border-l lg:border-l-0 lg:border-r border-white/70
         shadow-[inset_-1px_0_0_rgba(255,255,255,0.45),0_0_20px_rgba(0,0,0,0.01)] transition-transform duration-300
         lg:translate-x-0 ${open ? "translate-x-0" : "translate-x-full"}`}
+        style={{ WebkitBackdropFilter: "blur(64px)" }}
       >
         {/* Brand */}
         <div className="flex items-center justify-between px-6 h-20 shrink-0">

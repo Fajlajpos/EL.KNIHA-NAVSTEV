@@ -164,13 +164,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <div className="app-bg min-h-screen relative overflow-x-hidden">
         {/* Floating Ambient Glow Blobs for realistic Liquid Glass refraction */}
-        <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-sky-400/15 blur-[120px] animate-blob" style={{ animationDuration: "25s" }} />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-purple-400/12 blur-[140px] animate-blob" style={{ animationDuration: "35s", animationDelay: "2s" }} />
-          <div className="absolute top-[40%] right-[10%] w-[45vw] h-[45vw] rounded-full bg-emerald-400/8 blur-[110px] animate-blob" style={{ animationDuration: "20s", animationDelay: "5s" }} />
-          <div className="absolute bottom-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-pink-400/10 blur-[100px] animate-blob" style={{ animationDuration: "30s", animationDelay: "1s" }} />
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[100vw] h-[100vw] sm:w-[50vw] sm:h-[50vw] rounded-full bg-sky-400/22 sm:bg-sky-400/15 blur-[120px] animate-blob" style={{ animationDuration: "25s" }} />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[110vw] h-[110vw] sm:w-[60vw] sm:h-[60vw] rounded-full bg-purple-400/18 sm:bg-purple-400/12 blur-[140px] animate-blob" style={{ animationDuration: "35s", animationDelay: "2s" }} />
+          <div className="absolute top-[40%] right-[10%] w-[90vw] h-[90vw] sm:w-[45vw] sm:h-[45vw] rounded-full bg-emerald-400/15 sm:bg-emerald-400/8 blur-[110px] animate-blob" style={{ animationDuration: "20s", animationDelay: "5s" }} />
+          <div className="absolute bottom-[20%] left-[20%] w-[100vw] h-[100vw] sm:w-[40vw] sm:h-[40vw] rounded-full bg-pink-400/15 sm:bg-pink-400/10 blur-[100px] animate-blob" style={{ animationDuration: "30s", animationDelay: "1s" }} />
         </div>
-        {children}
+        <div className="relative z-10">{children}</div>
       </div>
     );
   }
@@ -178,11 +178,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-bg min-h-screen relative overflow-x-hidden">
       {/* Floating Ambient Glow Blobs for realistic Liquid Glass refraction */}
-      <div className="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-sky-400/15 blur-[120px] animate-blob" style={{ animationDuration: "25s" }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-purple-400/12 blur-[140px] animate-blob" style={{ animationDuration: "35s", animationDelay: "2s" }} />
-        <div className="absolute top-[40%] right-[10%] w-[45vw] h-[45vw] rounded-full bg-emerald-400/8 blur-[110px] animate-blob" style={{ animationDuration: "20s", animationDelay: "5s" }} />
-        <div className="absolute bottom-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-pink-400/10 blur-[100px] animate-blob" style={{ animationDuration: "30s", animationDelay: "1s" }} />
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[100vw] h-[100vw] sm:w-[50vw] sm:h-[50vw] rounded-full bg-sky-400/22 sm:bg-sky-400/15 blur-[120px] animate-blob" style={{ animationDuration: "25s" }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[110vw] h-[110vw] sm:w-[60vw] sm:h-[60vw] rounded-full bg-purple-400/18 sm:bg-purple-400/12 blur-[140px] animate-blob" style={{ animationDuration: "35s", animationDelay: "2s" }} />
+        <div className="absolute top-[40%] right-[10%] w-[90vw] h-[90vw] sm:w-[45vw] sm:h-[45vw] rounded-full bg-emerald-400/15 sm:bg-emerald-400/8 blur-[110px] animate-blob" style={{ animationDuration: "20s", animationDelay: "5s" }} />
+        <div className="absolute bottom-[20%] left-[20%] w-[100vw] h-[100vw] sm:w-[40vw] sm:h-[40vw] rounded-full bg-pink-400/15 sm:bg-pink-400/10 blur-[100px] animate-blob" style={{ animationDuration: "30s", animationDelay: "1s" }} />
       </div>
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -190,6 +190,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobilní top-bar */}
       <div
         className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-[#f5f5f7]/60 backdrop-blur-2xl border-b border-black/[0.04] shadow-sm"
+        style={{ WebkitBackdropFilter: "blur(40px)" }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-full-dark.png" alt="CHECKNI TO" className="h-7 w-auto object-contain" />
@@ -202,7 +203,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </div>
 
-      <div className="lg:pl-[var(--sidebar-w)]">{children}</div>
+      <div className="lg:pl-[var(--sidebar-w)] relative z-10">{children}</div>
 
       {/* Floating Chatbot Widget for CEO */}
       {userRole === "CEO" && (
