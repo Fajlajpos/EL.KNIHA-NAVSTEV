@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  ShieldAlert,
   FileCheck,
   AlertTriangle,
   CheckCircle,
@@ -506,7 +505,7 @@ export default function DashboardPage() {
   // Shift list filters
   const [shiftFilterUserId, setShiftFilterUserId] = useState("");
   const [shiftFilterDate, setShiftFilterDate] = useState("");
-  const [activeTab, setActiveTab] = useState<"evac_approvals" | "payroll" | "shifts" | "employees_mgmt">("evac_approvals");
+  const [activeTab, setActiveTab] = useState<"presence_approvals" | "payroll" | "shifts" | "employees_mgmt">("presence_approvals");
 
   // Reusable shift presets (start/end). Lunch auto-deducted later for shifts > 6h.
   const SHIFT_PRESETS = [
@@ -1119,38 +1118,6 @@ export default function DashboardPage() {
     ? [...requests, ...demoRequests.filter(req => !processedDemoReqs.includes(req.id))]
     : requests;
 
-  // Evacuation Plaintext download
-  const handleDownloadEvacuationList = () => {
-    const insideV = currentVisitors.filter((v) => !v.checkOut);
-    const insideE = currentEmployees.filter((e) => !e.checkOut);
-
-    let text = `EVAKUAČNÍ PLÁN / SEZNAM PŘÍTOMNÝCH OSOB\n`;
-    text += `Datum a čas vygenerování: ${new Date().toLocaleString("cs-CZ")}\n`;
-    text += `==========================================================\n\n`;
-
-    text += `ZAMĚSTNANCI (${insideE.length}):\n`;
-    text += `----------------------------------------------------------\n`;
-    insideE.forEach((e) => {
-      text += `[${e.department}] ${e.lastName} ${e.firstName} (Osobní č. ${e.employeeNumber}) | Prachod: ${new Date(e.checkIn).toLocaleTimeString("cs-CZ")} | Stav: ${e.status}\n`;
-    });
-
-    text += `\nNÁVŠTĚVY / HOSTÉ (${insideV.length}):\n`;
-    text += `----------------------------------------------------------\n`;
-    insideV.forEach((v) => {
-      text += `[Firma: ${v.organization}] ${v.lastName} ${v.firstName} | SPZ: ${v.spz || "Bez vozidla"} | Prachod: ${new Date(v.checkIn).toLocaleTimeString("cs-CZ")}\n`;
-    });
-
-    text += `\n==========================================================\n`;
-    text += `V případě požáru či evakuace zkontrolujte všechny osoby na shromaždišti.`;
-
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `evakuacni-plan-${new Date().toISOString().split("T")[0]}.txt`;
-    link.click();
-  };
-
   // Payroll CSV Generator
   const handleExportPayroll = () => {
     const csvHeaders = ["Osobní číslo", "Příjmení", "Jméno", "Oddělení", "Odpracované hodiny (Čisté)", "Odpolední hodiny (5%)", "Noční hodiny (15%)", "Víkendové hodiny (15%)", "Měsíční Fond", "Saldo (Přesčasy)", "Anomálie v docházce"];
@@ -1219,16 +1186,6 @@ export default function DashboardPage() {
 
           <div className="flex flex-wrap items-center gap-3">
 
-            {/* Evacuation Alert trigger */}
-            <button
-              onClick={handleDownloadEvacuationList}
-              className="btn-danger"
-              title="Okamžitě stáhnout seznam osob pro evakuační shromaždiště"
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Evakuační plán
-            </button>
-
             {/* Date month selector */}
             <input
               type="month"
@@ -1271,7 +1228,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-baseline gap-2">
               <strong className="text-4xl font-bold text-[#1d1d1f] tabular-nums">{totalInsideCount}</strong>
-              <span className="text-[11px] font-bold text-[#86868b]">evakuační stav</span>
+              <span className="text-[11px] font-bold text-[#86868b]">aktuální stav</span>
             </div>
           </div>
 
@@ -1314,7 +1271,7 @@ export default function DashboardPage() {
 
         {/* Tab Selector */}
         <div className="flex border-b border-black/[0.08] gap-6 overflow-x-auto">
-          <button onClick={() => setActiveTab("evac_approvals")} className={`tab whitespace-nowrap ${activeTab === "evac_approvals" ? "tab-active" : ""}`}>
+          <button onClick={() => setActiveTab("presence_approvals")} className={`tab whitespace-nowrap ${activeTab === "presence_approvals" ? "tab-active" : ""}`}>
             Přítomnost &amp; Korekce ({totalInsideCount + activeRequests.length})
           </button>
           <button onClick={() => setActiveTab("payroll")} className={`tab whitespace-nowrap ${activeTab === "payroll" ? "tab-active" : ""}`}>
@@ -1328,10 +1285,10 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {activeTab === "evac_approvals" && (
+        {activeTab === "presence_approvals" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-200">
             
-            {/* LEFT COLUMN: LIVE Evacuation plan list */}
+            {/* LEFT COLUMN: LIVE presence list */}
             <div className="lg:col-span-6 space-y-8">
               <div className="surface card-accent card-accent-rose text-[#1d1d1f] p-5">
 
