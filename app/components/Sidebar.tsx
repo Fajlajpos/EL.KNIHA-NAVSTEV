@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
-  Clock,
   User,
   LayoutDashboard,
   LogOut,
@@ -15,7 +14,6 @@ import {
 
 const NAV_ITEMS = [
   { name: "Kniha návštěv", desc: "Recepce & hosté", href: "/", icon: Building2 },
-  { name: "Kioskový terminál", desc: "Příchody / odchody", href: "/kiosk", icon: Clock },
   { name: "Portál zaměstnance", desc: "Moje docházka", href: "/portal", icon: User },
   { name: "CEO Dashboard", desc: "Řízení & mzdy", href: "/dashboard", icon: LayoutDashboard },
 ];

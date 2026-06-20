@@ -16,7 +16,6 @@ function getCookie(name: string) {
 /**
  * App shell — rozhoduje o rozložení podle cesty:
  *  - /login  → samostatná obrazovka (bez sidebaru)
- *  - /kiosk  → fullscreen nástěnný terminál (bez sidebaru)
  *  - ostatní → levý sidebar + hlavní obsah + aurora pozadí
  */
 export default function AppShell({ children }: { children: React.ReactNode }) {
