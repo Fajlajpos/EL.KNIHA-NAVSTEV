@@ -24,7 +24,6 @@ import {
   Building2,
   UserCheck,
   Users,
-  Sparkles,
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 
@@ -159,7 +158,7 @@ interface LiveOccupant {
   type: string; // employee or visitor
   firstName: string;
   lastName: string;
-  department: string;
+  department?: string;
   organization?: string;
   checkIn: string;
   checkOut: string | null;
@@ -358,53 +357,89 @@ const generateDemoLogs = (usersList: User[], selectedMonthStr: string) => {
   usersList.forEach(user => {
     if (user.role === "CEO") return;
 
-    for (let day = 1; day <= 20; day++) {
+    for (let day = 1; day <= 26; day++) {
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const date = new Date(dateStr);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      if (isWeekend && day % 3 !== 0) continue; // Skip most weekends
+      if (isWeekend) continue; // Skip weekends
 
       let checkInHour = 6;
-      let checkOutHour = 14.5; // 8.5 hours total (8h work + 0.5h lunch break deduction)
-      let logType = "WORK";
+      let checkOutHour = 14.5; // 8.5 hours total (8.0h work net)
+      const logType = "WORK";
       let status = "OK";
 
-      // Introduce anomalies
-      if (user.employeeNumber === "2001" && day === 5) {
-        // Jan Novak has a long shift (> 14h) -> Forgotten check-out anomaly
+      if (user.employeeNumber === "2001") {
+        // Jan Novak (Fund 160h, target +4.5h balance -> 164.5h)
+        if (day === 5) {
+          // Forgotten check-out anomaly (excluded from calculations because status is ERROR)
+          checkInHour = 6;
+          checkOutHour = 21;
+          status = "ERROR";
+        } else if (day >= 16 && day <= 22) {
+          // 5 weekdays (16, 17, 18, 19, 22) are 10.5h net (11.0h shift)
+          checkInHour = 6;
+          checkOutHour = 17;
+        } else {
+          // 14 weekdays are 8.0h net (8.5h shift)
+          checkInHour = 6;
+          checkOutHour = 14.5;
+        }
+      } else if (user.employeeNumber === "2002") {
+        // Martin Dvorak (Fund 160h, target 0.0h balance -> 160.0h)
+        if (day === 10) {
+          // Overlapping logs anomaly: 4.0h net + 5.0h net = 9.0h net
+          demoLogsList.push({
+            id: logIdCounter++,
+            userId: user.id,
+            checkIn: new Date(`${dateStr}T08:00:00`).toISOString(),
+            checkOut: new Date(`${dateStr}T12:00:00`).toISOString(),
+            logType: "WORK",
+            status: "OK",
+            note: null,
+            originalCheckIn: null,
+            originalCheckOut: null,
+            user,
+          });
+          demoLogsList.push({
+            id: logIdCounter++,
+            userId: user.id,
+            checkIn: new Date(`${dateStr}T11:00:00`).toISOString(),
+            checkOut: new Date(`${dateStr}T16:00:00`).toISOString(),
+            logType: "WORK",
+            status: "OK",
+            note: null,
+            originalCheckIn: null,
+            originalCheckOut: null,
+            user,
+          });
+          continue;
+        } else if (day === 1) {
+          // Day 1 is 7.0h net (7.5h shift: 07:30 - 15:00)
+          checkInHour = 7.5;
+          checkOutHour = 15;
+        } else {
+          // 18 weekdays are 8.0h net (8.5h shift)
+          checkInHour = 6;
+          checkOutHour = 14.5;
+        }
+      } else if (user.employeeNumber === "3001") {
+        // Lucie Kralova (Fund 150h, target +4.5h balance -> 154.5h)
+        checkInHour = 8;
+        if (day >= 18 && day <= 22) {
+          // 3 weekdays (18, 19, 22) are 9.0h net (9.5h shift: 08:00 - 17:30)
+          checkOutHour = 17.5;
+        } else {
+          // 17 weekdays are 7.5h net (8.0h shift: 08:00 - 16:00)
+          checkOutHour = 16;
+        }
+      } else {
+        // Josef Marek (4001) & Jana Svobodova (4002) (Fund 160h, target 0.0h balance -> 160.0h)
+        // 20 weekdays of 8.0h net (8.5h shift)
         checkInHour = 6;
-        checkOutHour = 21;
-        status = "ERROR";
-      } else if (user.employeeNumber === "2002" && day === 10) {
-        // Martin Dvorak has overlapping logs (anomaly)
-        demoLogsList.push({
-          id: logIdCounter++,
-          userId: user.id,
-          checkIn: new Date(`${dateStr}T08:00:00`).toISOString(),
-          checkOut: new Date(`${dateStr}T12:00:00`).toISOString(),
-          logType: "WORK",
-          status: "OK",
-          note: null,
-          originalCheckIn: null,
-          originalCheckOut: null,
-          user,
-        });
-        demoLogsList.push({
-          id: logIdCounter++,
-          userId: user.id,
-          checkIn: new Date(`${dateStr}T11:00:00`).toISOString(),
-          checkOut: new Date(`${dateStr}T16:00:00`).toISOString(),
-          logType: "WORK",
-          status: "OK",
-          note: null,
-          originalCheckIn: null,
-          originalCheckOut: null,
-          user,
-        });
-        continue;
+        checkOutHour = 14.5;
       }
 
-      const checkInISO = new Date(`${dateStr}T${String(checkInHour).padStart(2, "0")}:00:00`).toISOString();
+      const checkInISO = new Date(`${dateStr}T${String(Math.floor(checkInHour)).padStart(2, "0")}:${checkInHour % 1 === 0.5 ? "30" : "00"}:00`).toISOString();
       const checkOutISO = new Date(`${dateStr}T${String(Math.floor(checkOutHour)).padStart(2, "0")}:${checkOutHour % 1 === 0.5 ? "30" : "00"}:00`).toISOString();
 
       demoLogsList.push({
