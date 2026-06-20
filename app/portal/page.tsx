@@ -57,8 +57,104 @@ interface CorrectionRequest {
   createdAt: string;
 }
 
+// ============================================
+// DEMO MODE MOCK DATA & GENERATORS
+// ============================================
+const getTodayAtTime = (timeStr: string) => {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+};
+
+const generateDemoLogsForUser = (user: { id: number; employeeNumber: string }) => {
+  const demoLogsList: AttendanceLog[] = [];
+  const year = 2026;
+  const month = 6;
+  let logIdCounter = 8000;
+
+  for (let day = 1; day <= 20; day++) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const date = new Date(dateStr);
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    if (isWeekend && day % 3 !== 0) continue; // Skip most weekends
+
+    let checkInHour = 6;
+    let checkOutHour = 14.5;
+    let logType = "WORK";
+    let status = "OK";
+
+    if (user.employeeNumber === "2001" && day === 5) {
+      checkInHour = 6;
+      checkOutHour = 21;
+      status = "ERROR";
+    }
+
+    demoLogsList.push({
+      id: logIdCounter++,
+      userId: user.id,
+      checkIn: new Date(`${dateStr}T${String(checkInHour).padStart(2, "0")}:00:00`).toISOString(),
+      checkOut: new Date(`${dateStr}T${String(Math.floor(checkOutHour)).padStart(2, "0")}:${checkOutHour % 1 === 0.5 ? "30" : "00"}:00`).toISOString(),
+      logType,
+      status,
+      note: null,
+      originalCheckIn: null,
+      originalCheckOut: null,
+    });
+
+    if (day % 4 === 0) {
+      demoLogsList.push({
+        id: logIdCounter++,
+        userId: user.id,
+        checkIn: new Date(`${dateStr}T11:30:00`).toISOString(),
+        checkOut: new Date(`${dateStr}T12:00:00`).toISOString(),
+        logType: "LUNCH",
+        status: "OK",
+        note: null,
+        originalCheckIn: null,
+        originalCheckOut: null,
+      });
+    }
+  }
+  return demoLogsList;
+};
+
+const generateDemoShiftsForUser = () => {
+  const year = 2026;
+  const month = 6;
+  const list: PortalShift[] = [
+    { id: 7001, date: `${year}-06-01`, startTime: "06:00", endTime: "14:30", note: "Ranní směna" },
+    { id: 7002, date: `${year}-06-02`, startTime: "06:00", endTime: "14:30", note: "Ranní směna" },
+    { id: 7003, date: `${year}-06-03`, startTime: "06:00", endTime: "14:30", note: "Ranní" },
+    { id: 7004, date: `${year}-06-04`, startTime: "06:00", endTime: "14:30", note: "Ranní" },
+    { id: 7005, date: `${year}-06-05`, startTime: "06:00", endTime: "14:30", note: "Ranní" }
+  ];
+  return list;
+};
+
+const generateDemoRequestsForUser = (user: { id: number }) => {
+  const list: CorrectionRequest[] = [
+    {
+      id: 9991,
+      userId: user.id,
+      attendanceLogId: null,
+      requestedCheckIn: new Date("2026-06-19T06:00:00.000Z").toISOString(),
+      requestedCheckOut: new Date("2026-06-19T14:30:00.000Z").toISOString(),
+      requestedLogType: "WORK",
+      reason: "Zapomněl jsem si čip doma, ale normálně jsem odpracoval ranní směnu.",
+      status: "PENDING",
+      createdAt: new Date("2026-06-19T15:00:00.000Z").toISOString()
+    }
+  ];
+  return list;
+};
+
 export default function PortalPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Demo Mode States
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [processedDemoReqs, setProcessedDemoReqs] = useState<number[]>([]);
 
   // AI Chatbot States
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -169,6 +265,21 @@ export default function PortalPage() {
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [requests, setRequests] = useState<CorrectionRequest[]>([]);
   const [shifts, setShifts] = useState<PortalShift[]>([]);
+
+  const activeLogs = isDemoMode && activeEmployee
+    ? generateDemoLogsForUser(activeEmployee)
+    : logs;
+
+  const activeShifts = isDemoMode && activeEmployee
+    ? generateDemoShiftsForUser()
+    : shifts;
+
+  const activeRequests = isDemoMode && activeEmployee
+    ? [
+        ...requests,
+        ...generateDemoRequestsForUser(activeEmployee).filter(req => !processedDemoReqs.includes(req.id))
+      ]
+    : requests;
   const [activeTab, setActiveTab] = useState<"attendance" | "shifts">("attendance");
 
   const [loggedInEmployeeNumber, setLoggedInEmployeeNumber] = useState<string | null>(null);
@@ -192,6 +303,42 @@ export default function PortalPage() {
     } else {
       window.location.replace("/login?redirect=/portal");
     }
+  }, []);
+
+  // Keyboard Shortcut Event Hook for Demo Mode (Shift + D + E)
+  useEffect(() => {
+    const pressedKeys = new Set<string>();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      pressedKeys.add(e.key.toLowerCase());
+
+      if (
+        pressedKeys.has("shift") &&
+        pressedKeys.has("d") &&
+        pressedKeys.has("e")
+      ) {
+        setIsDemoMode((prev) => !prev);
+        pressedKeys.clear();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      pressedKeys.delete(e.key.toLowerCase());
+    };
+
+    const handleBlur = () => {
+      pressedKeys.clear();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
   }, []);
 
   // Form State
@@ -289,6 +436,16 @@ export default function PortalPage() {
       return;
     }
 
+    if (isDemoMode) {
+      setFeedback({ msg: "Žádost o opravu byla odeslána ke schválení.", success: true });
+      setReqDate("");
+      setReqCheckInTime("");
+      setReqCheckOutTime("");
+      setReqReason("");
+      setSelectedLogId("");
+      return;
+    }
+
     let requestedCheckIn = null;
     let requestedCheckOut = null;
 
@@ -303,7 +460,7 @@ export default function PortalPage() {
       }
     } else {
       // Edit mode
-      const targetLog = logs.find((l) => l.id === parseInt(selectedLogId, 10));
+      const targetLog = activeLogs.find((l) => l.id === parseInt(selectedLogId, 10));
       if (!targetLog) {
         setFeedback({ msg: "Zvolte platný záznam k opravě.", success: false });
         return;
@@ -361,7 +518,7 @@ export default function PortalPage() {
       setReqCheckOutTime("");
       return;
     }
-    const log = logs.find((l) => l.id === parseInt(logIdVal, 10));
+    const log = activeLogs.find((l) => l.id === parseInt(logIdVal, 10));
     if (log) {
       const inTime = new Date(log.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
       const outTime = log.checkOut 
@@ -376,7 +533,7 @@ export default function PortalPage() {
   // Hour tracking calculations
   const calculateTotalHours = () => {
     let totalMs = 0;
-    logs.forEach((log) => {
+    activeLogs.forEach((log) => {
       if (log.checkOut && log.status !== "ERROR") {
         const diff = new Date(log.checkOut).getTime() - new Date(log.checkIn).getTime();
         // Lunch breaks are separate logs in our system, so we don't count LUNCH logs as work hours!
@@ -462,7 +619,7 @@ export default function PortalPage() {
               Přehled docházky
             </button>
             <button onClick={() => setActiveTab("shifts")} className={`tab ${activeTab === "shifts" ? "tab-active" : ""}`}>
-              Můj plán směn ({shifts.length})
+              Můj plán směn ({activeShifts.length})
             </button>
           </div>
 
@@ -555,17 +712,17 @@ export default function PortalPage() {
                 Historie zápisů (Aktuální měsíc)
               </h2>
 
-              {isLoading && logs.length === 0 ? (
+              {isLoading && activeLogs.length === 0 ? (
                 <div className="flex justify-center items-center py-20">
                   <Loader2 className="h-8 w-8 animate-spin text-[#6e6e73]" />
                 </div>
-              ) : logs.length === 0 ? (
+              ) : activeLogs.length === 0 ? (
                 <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                   Žádné docházkové zápisy v tomto období.
                 </div>
               ) : (
-                <div className="divide-y divide-black/5 max-h-[500px] overflow-y-auto pr-2">
-                  {logs.map((log) => {
+                <div className="divide-y divide-black/5 max-h-[500px] overflow-y-auto pr-2 premium-scroll">
+                  {activeLogs.map((log) => {
                     const isLunch = log.logType === "LUNCH";
                     const isDoctor = log.logType === "DOCTOR";
                     const isTrip = log.logType === "BUSINESS_TRIP";
@@ -694,7 +851,7 @@ export default function PortalPage() {
                         className="select text-xs font-semibold"
                       >
                         <option value="" className="text-[#6e6e73]">-- Vyberte chybný záznam --</option>
-                        {logs.map((log) => (
+                        {activeLogs.map((log) => (
                           <option key={log.id} value={log.id} className="text-[#1d1d1f]">
                             {formatDateCzech(log.checkIn)} ({log.logType}) | Od: {formatTimeCzech(log.checkIn)} {log.checkOut ? `do ${formatTimeCzech(log.checkOut)}` : "(Otevřený)"}
                           </option>
@@ -800,13 +957,13 @@ export default function PortalPage() {
                   Stav podaných žádostí
                 </h2>
 
-                {requests.length === 0 ? (
+                {activeRequests.length === 0 ? (
                   <div className="py-6 text-center text-[#6e6e73] text-xs italic font-bold uppercase tracking-wider bg-black/[0.04] border border-black/[0.08] rounded-xl">
                     Nebyly odeslány žádné žádosti o korekci.
                   </div>
                 ) : (
-                  <div className="divide-y divide-black/5 max-h-[220px] overflow-y-auto pr-2 space-y-2">
-                    {requests.map((req) => {
+                  <div className="divide-y divide-black/5 max-h-[220px] overflow-y-auto pr-2 space-y-2 premium-scroll">
+                    {activeRequests.map((req) => {
                       const isPending = req.status === "PENDING";
                       const isApproved = req.status === "APPROVED";
                       const isRejected = req.status === "REJECTED";
@@ -858,13 +1015,13 @@ export default function PortalPage() {
                   Rozpis plánovaných směn
                 </h2>
 
-                {shifts.length === 0 ? (
+                {activeShifts.length === 0 ? (
                   <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                     Na tento měsíc nejsou naplánovány žádné směny.
                   </div>
                 ) : (
-                  <div className="divide-y divide-black/5 max-h-[600px] overflow-y-auto pr-2">
-                    {shifts.map((shift) => {
+                  <div className="divide-y divide-black/5 max-h-[600px] overflow-y-auto pr-2 premium-scroll">
+                    {activeShifts.map((shift) => {
                       const startParts = shift.startTime.split(":");
                       const endParts = shift.endTime.split(":");
                       const startMins = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
@@ -915,12 +1072,12 @@ export default function PortalPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between border-b border-black/5 pb-2">
                       <span className="text-xs text-[#6e6e73]">Celkem směn:</span>
-                      <strong className="text-xs font-bold text-[#1d1d1f]">{shifts.length}</strong>
+                      <strong className="text-xs font-bold text-[#1d1d1f]">{activeShifts.length}</strong>
                     </div>
                     <div className="flex justify-between border-b border-black/5 pb-2">
                       <span className="text-xs text-[#6e6e73]">Naplánované hodiny (Netto):</span>
                       <strong className="text-xs font-bold text-[#1d1d1f]">
-                        {shifts.reduce((acc, shift) => {
+                        {activeShifts.reduce((acc, shift) => {
                           const startParts = shift.startTime.split(":");
                           const endParts = shift.endTime.split(":");
                           const startMins = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);

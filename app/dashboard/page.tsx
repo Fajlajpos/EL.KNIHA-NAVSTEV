@@ -24,6 +24,7 @@ import {
   Building2,
   UserCheck,
   Users,
+  Sparkles,
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 
@@ -213,9 +214,238 @@ interface Shift {
   user: { firstName: string; lastName: string };
 }
 
+// ============================================
+// DEMO MODE MOCK DATA & GENERATORS
+// ============================================
+const getTodayAtTime = (timeStr: string) => {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  return d.toISOString();
+};
+
+const demoEmployees: LiveOccupant[] = [
+  {
+    id: "demo-e-1",
+    type: "employee",
+    employeeNumber: "2001",
+    firstName: "Jan",
+    lastName: "Novák",
+    department: "Habartov - Výroba",
+    checkIn: getTodayAtTime("06:15"),
+    checkOut: null,
+    status: "Pracuje",
+  },
+  {
+    id: "demo-e-2",
+    type: "employee",
+    employeeNumber: "2002",
+    firstName: "Martin",
+    lastName: "Dvořák",
+    department: "Svatava - Sklad",
+    checkIn: getTodayAtTime("07:30"),
+    checkOut: null,
+    status: "Na obědě",
+  },
+  {
+    id: "demo-e-3",
+    type: "employee",
+    employeeNumber: "3001",
+    firstName: "Lucie",
+    lastName: "Králová",
+    department: "Habartov - THP",
+    checkIn: getTodayAtTime("08:00"),
+    checkOut: null,
+    status: "U lékaře",
+  },
+  {
+    id: "demo-e-4",
+    type: "employee",
+    employeeNumber: "4001",
+    firstName: "Josef",
+    lastName: "Marek",
+    department: "Svatava - Výroba",
+    checkIn: getTodayAtTime("06:45"),
+    checkOut: null,
+    status: "Na přestávce",
+  },
+  {
+    id: "demo-e-5",
+    type: "employee",
+    employeeNumber: "4002",
+    firstName: "Jana",
+    lastName: "Svobodová",
+    department: "Habartov - Výroba",
+    checkIn: getTodayAtTime("07:15"),
+    checkOut: null,
+    status: "Služební cesta",
+  }
+];
+
+const demoVisitors: LiveOccupant[] = [
+  {
+    id: "demo-v-1",
+    type: "visitor",
+    firstName: "Karel",
+    lastName: "Gott",
+    organization: "Supraphon",
+    spz: "1A2 3456",
+    checkIn: getTodayAtTime("09:00"),
+    checkOut: null,
+    status: "V budově",
+  },
+  {
+    id: "demo-v-2",
+    type: "visitor",
+    firstName: "Emil",
+    lastName: "Zátopek",
+    organization: "TJ Vítkovice",
+    spz: "2B4 5678",
+    checkIn: getTodayAtTime("08:30"),
+    checkOut: null,
+    status: "V budově",
+  }
+];
+
+const demoRequests: CorrectionRequest[] = [
+  {
+    id: 9991,
+    userId: 9992001,
+    attendanceLogId: null,
+    requestedCheckIn: new Date("2026-06-19T06:00:00.000Z").toISOString(),
+    requestedCheckOut: new Date("2026-06-19T14:30:00.000Z").toISOString(),
+    requestedLogType: "WORK",
+    reason: "Zapomněl jsem si čip doma, ale normálně jsem odpracoval ranní směnu.",
+    status: "PENDING",
+    createdAt: new Date("2026-06-19T15:00:00.000Z").toISOString(),
+    user: {
+      id: 9992001,
+      employeeNumber: "2001",
+      firstName: "Jan",
+      lastName: "Novák",
+      department: "Habartov - Výroba",
+      role: "EMPLOYEE",
+      hourlyFund: 40.0
+    }
+  },
+  {
+    id: 9992,
+    userId: 9994001,
+    attendanceLogId: 8999,
+    requestedCheckIn: new Date("2026-06-18T06:45:00.000Z").toISOString(),
+    requestedCheckOut: new Date("2026-06-18T15:15:00.000Z").toISOString(),
+    requestedLogType: "WORK",
+    reason: "Při odchodu nefungoval terminál (vybitá baterie/chyba sítě), odcházel jsem v 15:15.",
+    status: "PENDING",
+    createdAt: new Date("2026-06-18T16:00:00.000Z").toISOString(),
+    user: {
+      id: 9994001,
+      employeeNumber: "4001",
+      firstName: "Josef",
+      lastName: "Marek",
+      department: "Svatava - Výroba",
+      role: "EMPLOYEE",
+      hourlyFund: 40.0
+    }
+  }
+];
+
+const generateDemoLogs = (usersList: User[], selectedMonthStr: string) => {
+  const [year, month] = selectedMonthStr.split("-").map(Number);
+  const demoLogsList: AttendanceLog[] = [];
+  let logIdCounter = 8000;
+
+  usersList.forEach(user => {
+    if (user.role === "CEO") return;
+
+    for (let day = 1; day <= 20; day++) {
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const date = new Date(dateStr);
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      if (isWeekend && day % 3 !== 0) continue; // Skip most weekends
+
+      let checkInHour = 6;
+      let checkOutHour = 14.5; // 8.5 hours total (8h work + 0.5h lunch break deduction)
+      let logType = "WORK";
+      let status = "OK";
+
+      // Introduce anomalies
+      if (user.employeeNumber === "2001" && day === 5) {
+        // Jan Novak has a long shift (> 14h) -> Forgotten check-out anomaly
+        checkInHour = 6;
+        checkOutHour = 21;
+        status = "ERROR";
+      } else if (user.employeeNumber === "2002" && day === 10) {
+        // Martin Dvorak has overlapping logs (anomaly)
+        demoLogsList.push({
+          id: logIdCounter++,
+          userId: user.id,
+          checkIn: new Date(`${dateStr}T08:00:00`).toISOString(),
+          checkOut: new Date(`${dateStr}T12:00:00`).toISOString(),
+          logType: "WORK",
+          status: "OK",
+          note: null,
+          originalCheckIn: null,
+          originalCheckOut: null,
+          user,
+        });
+        demoLogsList.push({
+          id: logIdCounter++,
+          userId: user.id,
+          checkIn: new Date(`${dateStr}T11:00:00`).toISOString(),
+          checkOut: new Date(`${dateStr}T16:00:00`).toISOString(),
+          logType: "WORK",
+          status: "OK",
+          note: null,
+          originalCheckIn: null,
+          originalCheckOut: null,
+          user,
+        });
+        continue;
+      }
+
+      const checkInISO = new Date(`${dateStr}T${String(checkInHour).padStart(2, "0")}:00:00`).toISOString();
+      const checkOutISO = new Date(`${dateStr}T${String(Math.floor(checkOutHour)).padStart(2, "0")}:${checkOutHour % 1 === 0.5 ? "30" : "00"}:00`).toISOString();
+
+      demoLogsList.push({
+        id: logIdCounter++,
+        userId: user.id,
+        checkIn: checkInISO,
+        checkOut: checkOutISO,
+        logType,
+        status,
+        note: null,
+        originalCheckIn: null,
+        originalCheckOut: null,
+        user,
+      });
+
+      if (day % 4 === 0) {
+        demoLogsList.push({
+          id: logIdCounter++,
+          userId: user.id,
+          checkIn: new Date(`${dateStr}T11:30:00`).toISOString(),
+          checkOut: new Date(`${dateStr}T12:00:00`).toISOString(),
+          logType: "LUNCH",
+          status: "OK",
+          note: null,
+          originalCheckIn: null,
+          originalCheckOut: null,
+          user,
+        });
+      }
+    }
+  });
+
+  return demoLogsList;
+};
+
 export default function DashboardPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // Demo Mode States
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [processedDemoReqs, setProcessedDemoReqs] = useState<number[]>([]);
 
   const [liveOccupants, setLiveOccupants] = useState<{ visitors: LiveOccupant[]; employees: LiveOccupant[] }>({
     visitors: [],
@@ -303,6 +533,42 @@ export default function DashboardPage() {
       window.location.replace("/login?redirect=/dashboard");
     }
   }, []);
+
+  // Keyboard Shortcut Event Hook for Demo Mode (Shift + D + E)
+  useEffect(() => {
+    const pressedKeys = new Set<string>();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      pressedKeys.add(e.key.toLowerCase());
+
+      if (
+        pressedKeys.has("shift") &&
+        pressedKeys.has("d") &&
+        pressedKeys.has("e")
+      ) {
+        setIsDemoMode((prev) => !prev);
+        pressedKeys.clear();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      pressedKeys.delete(e.key.toLowerCase());
+    };
+
+    const handleBlur = () => {
+      pressedKeys.clear();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
   
   // UI filter states
   const [selectedMonth, setSelectedMonth] = useState("2026-06");
@@ -371,6 +637,11 @@ export default function DashboardPage() {
 
   // Handle correction approval/rejection
   const handleProcessRequest = async (requestId: number, approve: boolean) => {
+    if (isDemoMode && (requestId === 9991 || requestId === 9992)) {
+      setStatusMsg({ text: `Žádost úspěšně ${approve ? "schválena" : "zamítnuta"}.`, error: false });
+      setProcessedDemoReqs(prev => [...prev, requestId]);
+      return;
+    }
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -528,7 +799,10 @@ export default function DashboardPage() {
 
   // Precise Shift & Bonus Calculator (Afternoon 5%, Night 15%, Weekend 15%, Overtime, Auto Lunch Breaks)
   const calculateEmployeeStats = (empId: number) => {
-    const empLogs = logs.filter((l) => l.userId === empId);
+    const activeLogs = isDemoMode
+      ? [...logs, ...generateDemoLogs(users, selectedMonth)]
+      : logs;
+    const empLogs = activeLogs.filter((l) => l.userId === empId);
     let totalWorkHours = 0;
     let afternoonHours = 0;
     let nightHours = 0;
@@ -795,14 +1069,25 @@ export default function DashboardPage() {
   };
 
   // Get active occupants counts
-  const totalInsideCount = liveOccupants.visitors.filter(v => !v.checkOut).length + liveOccupants.employees.filter(e => !e.checkOut).length;
-  const employeesInsideCount = liveOccupants.employees.filter(e => !e.checkOut).length;
-  const visitorsInsideCount = liveOccupants.visitors.filter(v => !v.checkOut).length;
+  const currentEmployees = isDemoMode
+    ? [...liveOccupants.employees, ...demoEmployees]
+    : liveOccupants.employees;
+  const currentVisitors = isDemoMode
+    ? [...liveOccupants.visitors, ...demoVisitors]
+    : liveOccupants.visitors;
+
+  const totalInsideCount = currentVisitors.filter(v => !v.checkOut).length + currentEmployees.filter(e => !e.checkOut).length;
+  const employeesInsideCount = currentEmployees.filter(e => !e.checkOut).length;
+  const visitorsInsideCount = currentVisitors.filter(v => !v.checkOut).length;
+
+  const activeRequests = isDemoMode
+    ? [...requests, ...demoRequests.filter(req => !processedDemoReqs.includes(req.id))]
+    : requests;
 
   // Evacuation Plaintext download
   const handleDownloadEvacuationList = () => {
-    const insideV = liveOccupants.visitors.filter((v) => !v.checkOut);
-    const insideE = liveOccupants.employees.filter((e) => !e.checkOut);
+    const insideV = currentVisitors.filter((v) => !v.checkOut);
+    const insideE = currentEmployees.filter((e) => !e.checkOut);
 
     let text = `EVAKUAČNÍ PLÁN / SEZNAM PŘÍTOMNÝCH OSOB\n`;
     text += `Datum a čas vygenerování: ${new Date().toLocaleString("cs-CZ")}\n`;
@@ -980,11 +1265,11 @@ export default function DashboardPage() {
           <div className="stat-card animate-rise" style={{ animationDelay: "120ms" }}>
             <div className="flex items-start justify-between">
               <span className="eyebrow">Nevyřízené korekce</span>
-              <span className={`stat-icon ${requests.length > 0 ? "bg-rose-500/15 text-rose-600" : "bg-black/[0.06] text-[#86868b]"}`}><FileCheck className="h-5 w-5" /></span>
+              <span className={`stat-icon ${activeRequests.length > 0 ? "bg-rose-500/15 text-rose-600" : "bg-black/[0.06] text-[#86868b]"}`}><FileCheck className="h-5 w-5" /></span>
             </div>
             <div className="flex items-baseline gap-2">
-              <strong className={`text-4xl font-bold tabular-nums ${requests.length > 0 ? "text-rose-600" : "text-[#86868b]"}`}>
-                {requests.length}
+              <strong className={`text-4xl font-bold tabular-nums ${activeRequests.length > 0 ? "text-rose-600" : "text-[#86868b]"}`}>
+                {activeRequests.length}
               </strong>
               <span className="text-[11px] font-bold text-[#86868b]">žádostí ke schválení</span>
             </div>
@@ -995,7 +1280,7 @@ export default function DashboardPage() {
         {/* Tab Selector */}
         <div className="flex border-b border-black/[0.08] gap-6 overflow-x-auto">
           <button onClick={() => setActiveTab("evac_approvals")} className={`tab whitespace-nowrap ${activeTab === "evac_approvals" ? "tab-active" : ""}`}>
-            Přítomnost &amp; Korekce ({totalInsideCount + requests.length})
+            Přítomnost &amp; Korekce ({totalInsideCount + activeRequests.length})
           </button>
           <button onClick={() => setActiveTab("payroll")} className={`tab whitespace-nowrap ${activeTab === "payroll" ? "tab-active" : ""}`}>
             Zpracování mezd
@@ -1024,10 +1309,10 @@ export default function DashboardPage() {
                 {totalInsideCount === 0 ? (
                   <p className="py-8 text-center text-xs text-[#6e6e73] font-semibold italic">Budova je prázdná.</p>
                 ) : (
-                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 premium-scroll">
                     
                     {/* Active Employees */}
-                    {liveOccupants.employees.filter(e => !e.checkOut).map((occ) => (
+                    {currentEmployees.filter(e => !e.checkOut).map((occ) => (
                       <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
                           <div className="font-bold text-[#1d1d1f]">{occ.lastName} {occ.firstName}</div>
@@ -1047,7 +1332,7 @@ export default function DashboardPage() {
                     ))}
 
                     {/* Active Visitors */}
-                    {liveOccupants.visitors.filter(v => !v.checkOut).map((occ) => (
+                    {currentVisitors.filter(v => !v.checkOut).map((occ) => (
                       <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
                           <div className="font-bold text-amber-700">Host: {occ.lastName} {occ.firstName}</div>
@@ -1074,13 +1359,13 @@ export default function DashboardPage() {
                   Schvalování oprav docházky
                 </h3>
 
-                {requests.length === 0 ? (
+                {activeRequests.length === 0 ? (
                   <div className="py-8 text-center text-xs text-[#6e6e73] italic bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold uppercase tracking-wider">
                     Žádné pending žádosti k vyřízení.
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-                    {requests.map((req) => (
+                  <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 premium-scroll">
+                    {activeRequests.map((req) => (
                       <div key={req.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3.5 space-y-3">
                         
                         <div className="text-xs font-mono">
@@ -1403,7 +1688,7 @@ export default function DashboardPage() {
                 }
 
                 return (
-                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto px-2">
+                <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto px-2 premium-scroll">
                   {filteredShifts.map((shift) => {
                     const isEditing = editingShiftId === shift.id;
                     const netHours = isEditing
