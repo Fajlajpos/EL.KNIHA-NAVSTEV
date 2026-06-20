@@ -496,18 +496,18 @@ export default function PortalPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-black/[0.08] mt-6 text-center font-mono">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-4 pt-6 border-t border-black/[0.08] mt-6 text-center font-mono">
                 <div>
-                  <span className="block text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Odpracováno</span>
-                  <span className="text-lg font-bold text-[#1d1d1f]">{hoursWorked}h</span>
+                  <span className="block text-[9px] sm:text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest truncate" title="Odpracováno">Odpracováno</span>
+                  <span className="text-sm sm:text-lg font-bold text-[#1d1d1f]">{hoursWorked}h</span>
                 </div>
-                <div className="border-x border-black/[0.08]">
-                  <span className="block text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Měsíční Fond</span>
-                  <span className="text-lg font-bold text-[#1d1d1f]">{monthlyFundTarget}h</span>
+                <div className="border-x border-black/[0.08] px-1">
+                  <span className="block text-[9px] sm:text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest truncate" title="Měsíční Fond">Měsíční Fond</span>
+                  <span className="text-sm sm:text-lg font-bold text-[#1d1d1f]">{monthlyFundTarget}h</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest">Saldo / Přesčasy</span>
-                  <span className={`text-lg font-bold ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                  <span className="block text-[9px] sm:text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest truncate" title="Saldo / Přesčasy">Saldo / Přesčasy</span>
+                  <span className={`text-sm sm:text-lg font-bold ${balance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                     {balance >= 0 ? `+${balance.toFixed(2)}h` : `${balance.toFixed(2)}h`}
                   </span>
                 </div>
@@ -582,9 +582,9 @@ export default function PortalPage() {
                     }
 
                     return (
-                      <div key={log.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono">
+                      <div key={log.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 text-xs font-mono">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-[#1d1d1f]">{formatDateCzech(log.checkIn)}</span>
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isLunch 
@@ -616,12 +616,12 @@ export default function PortalPage() {
                           </div>
                         </div>
 
-                        <div className="text-right">
-                          <span className="block font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px]">
+                        <div className="text-right self-end sm:self-auto">
+                          <span className="block font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px] w-fit ml-auto sm:ml-0">
                             {durationStr}
                           </span>
                           {log.note && (
-                            <span className="block text-[9px] text-[#86868b] mt-1 text-right max-w-[120px] truncate" title={log.note}>
+                            <span className="block text-[9px] text-[#86868b] mt-1 text-right max-w-[150px] truncate" title={log.note}>
                               {log.note}
                             </span>
                           )}
@@ -874,7 +874,7 @@ export default function PortalPage() {
                       const netHours = diffHours > 6.0 ? diffHours - 0.5 : diffHours;
 
                       return (
-                        <div key={shift.id} className="py-4 flex items-center justify-between gap-4 text-xs font-mono">
+                        <div key={shift.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 text-xs font-mono">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-[#1d1d1f]">
@@ -892,8 +892,8 @@ export default function PortalPage() {
                             </div>
                           </div>
 
-                          <div className="text-right">
-                            <span className="block font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px]">
+                          <div className="text-right self-end sm:self-auto">
+                            <span className="block font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px] w-fit ml-auto sm:ml-0">
                               {netHours.toFixed(1)} hod (čistý)
                             </span>
                           </div>
@@ -945,9 +945,9 @@ export default function PortalPage() {
 
       {/* Floating Chatbot Widget */}
       {loggedInRole !== "CEO" && (
-        <div className="fixed bottom-6 right-6 z-50 font-sans">
+        <div className={`fixed z-50 font-sans chatbot-widget ${isChatOpen ? "bottom-4 right-4 left-4 sm:left-auto sm:right-6 sm:bottom-6" : "bottom-4 right-4 sm:bottom-6 sm:right-6"}`}>
           {isChatOpen ? (
-            <div className="glass-liquid w-80 sm:w-96 h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+            <div className="glass-liquid w-full sm:w-96 h-[450px] sm:h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
               {/* Header */}
               <div className="bg-white/50 px-4 py-3.5 border-b border-white/60 text-[#1d1d1f] flex items-center justify-between shadow-sm relative z-10">
                 <div className="flex items-center gap-2">

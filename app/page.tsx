@@ -753,9 +753,9 @@ export default function Home() {
                     return (
                       <div
                         key={visit.id}
-                        className="py-3.5 first:pt-0 last:pb-0 flex items-center justify-between gap-4 -mx-2 px-2 rounded-xl hover:bg-black/[0.06] transition-colors"
+                        className="py-3.5 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 -mx-2 px-2 rounded-xl hover:bg-black/[0.06] transition-colors"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-start sm:items-center gap-3 min-w-0 w-full sm:w-auto">
                           {/* Avatar */}
                           <div
                             className={`h-10 w-10 rounded-xl flex items-center justify-center text-[#0071e3] font-bold text-sm shrink-0 ${
@@ -806,7 +806,7 @@ export default function Home() {
                         </div>
 
                         {/* Actions */}
-                        <div className="shrink-0">
+                        <div className="shrink-0 self-end sm:self-auto">
                           {isActive ? (
                             <button
                               onClick={() => handleCheckout(visit.id, `${visit.jmeno} ${visit.prijmeni}`)}

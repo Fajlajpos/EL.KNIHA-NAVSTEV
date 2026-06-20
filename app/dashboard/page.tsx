@@ -1099,11 +1099,11 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <button
                             onClick={() => handleProcessRequest(req.id, true)}
                             disabled={isUpdating}
-                            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-[0.98]"
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-[0.98] w-full"
                           >
                             <CheckCircle className="h-3.5 w-3.5" />
                             Schválit
@@ -1111,7 +1111,7 @@ export default function DashboardPage() {
                           <button
                             onClick={() => handleProcessRequest(req.id, false)}
                             disabled={isUpdating}
-                            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-[0.98]"
+                            className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 rounded-lg text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all active:scale-[0.98] w-full"
                           >
                             <XCircle className="h-3.5 w-3.5" />
                             Zamítnout
@@ -1165,7 +1165,7 @@ export default function DashboardPage() {
 
               {/* Wage summary list view */}
               <div className="overflow-x-auto border border-black/[0.08] rounded-xl">
-                <table className="w-full text-left text-xs font-mono divide-y divide-black/[0.08]">
+                <table className="w-full min-w-[750px] text-left text-xs font-mono divide-y divide-black/[0.08]">
                   <thead className="bg-black/[0.04] text-[10px] text-[#6e6e73] uppercase tracking-wider font-bold border-b border-black/[0.08]">
                     <tr>
                       <th className="px-4 py-3 font-sans">Jméno / ID</th>
@@ -1495,7 +1495,7 @@ export default function DashboardPage() {
                     }
 
                     return (
-                      <div key={shift.id} className="py-3 flex items-center justify-between gap-4 text-xs font-mono hover:bg-black/[0.04] px-3.5 rounded-xl transition-all cursor-pointer">
+                      <div key={shift.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-black/[0.04] px-3.5 rounded-xl transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-[#1d1d1f]">
@@ -1513,7 +1513,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto flex-wrap justify-end">
                           <span className="font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px]">
                             {netHours.toFixed(1)} hod (čistý)
                           </span>
@@ -1762,7 +1762,7 @@ export default function DashboardPage() {
                       <div
                         key={cred.username}
                         onClick={() => handleSelectEmployee(cred.username)}
-                        className="py-3.5 flex items-center justify-between gap-4 text-xs cursor-pointer hover:bg-black/[0.06] px-3.5 rounded-xl transition-all"
+                        className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 text-xs cursor-pointer hover:bg-black/[0.06] px-3.5 rounded-xl transition-all"
                         title="Zobrazit přihlašovací údaje"
                       >
                         <div className="space-y-1">
@@ -1808,7 +1808,7 @@ export default function DashboardPage() {
                             handleRemoveEmployee(cred.username, cred.displayName);
                           }}
                           disabled={isUpdating}
-                          className="inline-flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 shrink-0"
+                          className="inline-flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 self-end sm:self-auto shrink-0"
                         >
                           <Trash2 className="h-3 w-3" />
                           Odebrat

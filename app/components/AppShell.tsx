@@ -46,6 +46,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setUserRole(role || null);
   }, [pathname]);
 
+  // Sync sidebar open state to body class for global styling overrides (e.g. hiding chatbot)
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.classList.add("sidebar-open");
+    } else {
+      document.body.classList.remove("sidebar-open");
+    }
+    return () => {
+      document.body.classList.remove("sidebar-open");
+    };
+  }, [sidebarOpen]);
+
   const handleSendChatMessage = async (textToSend?: string) => {
     const messageText = textToSend || chatInput;
     if (!messageText.trim()) return;
@@ -177,26 +189,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobilní top-bar */}
       <div
-        className="lg:hidden sticky top-0 z-30 flex items-center gap-3 h-16 px-4 bg-[#f5f5f7]/60 backdrop-blur-2xl border-b border-black/[0.04] shadow-sm"
+        className="lg:hidden sticky top-0 z-30 flex items-center justify-between h-16 px-4 bg-[#f5f5f7]/60 backdrop-blur-2xl border-b border-black/[0.04] shadow-sm"
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-full-dark.png" alt="CHECKNI TO" className="h-7 w-auto object-contain" />
         <button
           onClick={() => setSidebarOpen(true)}
-          className="p-2 -ml-2 text-[#6e6e73] hover:text-[#1d1d1f] rounded-lg"
+          className="p-2 -mr-2 text-[#6e6e73] hover:text-[#1d1d1f] rounded-lg"
           aria-label="Otevřít menu"
         >
           <Menu className="h-5 w-5" />
         </button>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-full-dark.png" alt="CHECKNI TO" className="h-7 w-auto object-contain" />
       </div>
 
       <div className="lg:pl-[var(--sidebar-w)]">{children}</div>
 
       {/* Floating Chatbot Widget for CEO */}
       {userRole === "CEO" && (
-        <div className="fixed bottom-6 right-6 z-50 font-sans">
+        <div className={`fixed z-50 font-sans chatbot-widget ${isChatOpen ? "bottom-4 right-4 left-4 sm:left-auto sm:right-6 sm:bottom-6" : "bottom-4 right-4 sm:bottom-6 sm:right-6"}`}>
           {isChatOpen ? (
-            <div className="glass-liquid w-80 sm:w-96 h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+            <div className="glass-liquid w-full sm:w-96 h-[450px] sm:h-[500px] rounded-3xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
               {/* Header */}
               <div className="bg-white/50 px-4 py-3.5 border-b border-white/60 text-[#1d1d1f] flex items-center justify-between shadow-sm relative z-10">
                 <div className="flex items-center gap-2">

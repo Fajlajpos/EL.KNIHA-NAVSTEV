@@ -77,10 +77,10 @@ export default function Sidebar({
       />
 
       <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-[var(--sidebar-w)] flex flex-col
-        bg-gradient-to-b from-white/70 to-white/45 backdrop-blur-3xl border-r border-white/70
+        className={`fixed top-0 right-0 lg:right-auto lg:left-0 z-50 h-screen w-[var(--sidebar-w)] flex flex-col
+        bg-gradient-to-b from-white/70 to-white/45 backdrop-blur-3xl border-l lg:border-l-0 lg:border-r border-white/70
         shadow-[inset_-1px_0_0_rgba(255,255,255,0.45),0_0_20px_rgba(0,0,0,0.01)] transition-transform duration-300
-        lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        lg:translate-x-0 ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Brand */}
         <div className="flex items-center justify-between px-6 h-20 shrink-0">

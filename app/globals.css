@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  font-size: 16px;
+  transition: font-size 0.25s ease;
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 1023px) {
+  body.sidebar-open .chatbot-widget {
+    display: none !important;
+  }
+}
+
 /* ============================================================
    CHECKNI TO — Design System „Liquid Glass" (Apple, light)
    Světlý režim s efektem tlustého tekutého skla (specular highlights,
