@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
+  Activity,
   FileCheck,
   AlertTriangle,
   CheckCircle,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Search,
   Loader2,
+  CalendarPlus,
   UserPlus,
   Trash2,
   Users2,
@@ -113,6 +115,47 @@ const parseFallback = (rawText: string) => {
   return { jmeno, prijmeni };
 };
 
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatMonthLabel = (monthValue: string) => {
+  const [year, month] = monthValue.split("-").map(Number);
+  if (!year || !month) return monthValue;
+
+  return new Date(year, month - 1, 1).toLocaleDateString("cs-CZ", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const formatShiftDateKey = (dateValue: string) => {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  return getLocalDateKey(date);
+};
+
+const getWeekRange = (weekOffset: number) => {
+  const today = new Date();
+  const day = today.getDay();
+  const distanceToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + distanceToMonday + weekOffset * 7);
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  return {
+    start: getLocalDateKey(monday),
+    end: getLocalDateKey(friday),
+  };
+};
+
+const DEMO_ASSIGNED_SHIFTS_KEY = "checkni-demo-assigned-shifts";
+
 const loadImage = (file: File): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -209,7 +252,21 @@ interface Shift {
   startTime: string;
   endTime: string;
   note: string | null;
-  user: { firstName: string; lastName: string };
+  user?: { firstName: string; lastName: string };
+}
+
+interface CredentialUser {
+  username: string;
+  displayName: string;
+  role: string;
+  employeeNumber: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  department?: string;
+  email?: string;
+  pin?: string;
+  hourlyFund?: number;
 }
 
 // ============================================
@@ -284,9 +341,9 @@ const demoVisitors: LiveOccupant[] = [
   {
     id: "demo-v-1",
     type: "visitor",
-    firstName: "Karel",
-    lastName: "Gott",
-    organization: "Supraphon",
+    firstName: "Pavel",
+    lastName: "Horák",
+    organization: "Servisní partner",
     spz: "1A2 3456",
     checkIn: getTodayAtTime("09:00"),
     checkOut: null,
@@ -295,14 +352,82 @@ const demoVisitors: LiveOccupant[] = [
   {
     id: "demo-v-2",
     type: "visitor",
-    firstName: "Emil",
-    lastName: "Zátopek",
-    organization: "TJ Vítkovice",
+    firstName: "Milan",
+    lastName: "Svoboda",
+    organization: "Dopravce",
     spz: "2B4 5678",
     checkIn: getTodayAtTime("08:30"),
     checkOut: null,
     status: "V budově",
   }
+];
+
+const demoCredentialUsersSeed: CredentialUser[] = [
+  {
+    username: "jnovak",
+    password: "novak123",
+    pin: "2001",
+    displayName: "Jan Novák",
+    role: "EMPLOYEE",
+    employeeNumber: "2001",
+    firstName: "Jan",
+    lastName: "Novák",
+    department: "Habartov - Výroba",
+    email: "jan.novak@firma.cz",
+    hourlyFund: 40,
+  },
+  {
+    username: "mdvorak",
+    password: "dvorak123",
+    pin: "2002",
+    displayName: "Martin Dvořák",
+    role: "EMPLOYEE",
+    employeeNumber: "2002",
+    firstName: "Martin",
+    lastName: "Dvořák",
+    department: "Svatava - Sklad",
+    email: "martin.dvorak@firma.cz",
+    hourlyFund: 40,
+  },
+  {
+    username: "lkralova",
+    password: "kralova123",
+    pin: "3001",
+    displayName: "Lucie Králová",
+    role: "MANAGER",
+    employeeNumber: "3001",
+    firstName: "Lucie",
+    lastName: "Králová",
+    department: "Habartov - THP",
+    email: "lucie.kralova@firma.cz",
+    hourlyFund: 40,
+  },
+  {
+    username: "jmarek",
+    password: "marek123",
+    pin: "4001",
+    displayName: "Josef Marek",
+    role: "EMPLOYEE",
+    employeeNumber: "4001",
+    firstName: "Josef",
+    lastName: "Marek",
+    department: "Svatava - Výroba",
+    email: "josef.marek@firma.cz",
+    hourlyFund: 40,
+  },
+  {
+    username: "jsvobodova",
+    password: "svobodova123",
+    pin: "4002",
+    displayName: "Jana Svobodová",
+    role: "EMPLOYEE",
+    employeeNumber: "4002",
+    firstName: "Jana",
+    lastName: "Svobodová",
+    department: "Habartov - Výroba",
+    email: "jana.svobodova@firma.cz",
+    hourlyFund: 40,
+  },
 ];
 
 const demoRequests: CorrectionRequest[] = [
@@ -491,8 +616,10 @@ export default function DashboardPage() {
 
   // Shift planning states
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
+  const [demoAssignedShifts, setDemoAssignedShifts] = useState<Shift[]>([]);
   const [newShiftUserId, setNewShiftUserId] = useState("");
   const [newShiftDate, setNewShiftDate] = useState("");
+  const [newShiftEndDate, setNewShiftEndDate] = useState("");
   const [newShiftStartTime, setNewShiftStartTime] = useState("08:00");
   const [newShiftEndTime, setNewShiftEndTime] = useState("16:30");
   const [newShiftNote, setNewShiftNote] = useState("");
@@ -515,21 +642,20 @@ export default function DashboardPage() {
     { label: "Noční", start: "22:00", end: "06:00" },
   ];
 
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(DEMO_ASSIGNED_SHIFTS_KEY);
+      if (stored) {
+        setDemoAssignedShifts(JSON.parse(stored));
+      }
+    } catch {
+      setDemoAssignedShifts([]);
+    }
+  }, []);
+
   // Employee management states
-  interface CredentialUser {
-    username: string;
-    displayName: string;
-    role: string;
-    employeeNumber: string;
-    password?: string;
-    firstName?: string;
-    lastName?: string;
-    department?: string;
-    email?: string;
-    pin?: string;
-    hourlyFund?: number;
-  }
   const [credentialUsers, setCredentialUsers] = useState<CredentialUser[]>([]);
+  const [demoCredentialUsers, setDemoCredentialUsers] = useState<CredentialUser[]>(demoCredentialUsersSeed);
   const [selectedCredential, setSelectedCredential] = useState<CredentialUser | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -711,6 +837,54 @@ export default function DashboardPage() {
       setStatusMsg({ text: "Vyplňte prosím všechna povinná pole.", error: true });
       return;
     }
+
+    const startDate = new Date(newShiftDate);
+    const endDate = newShiftEndDate ? new Date(newShiftEndDate) : startDate;
+    if (endDate < startDate) {
+      setStatusMsg({ text: "Datum do nesmí být před datem od.", error: true });
+      return;
+    }
+
+    if (isDemoMode) {
+      const selectedUser = users.find((u) => u.id === parseInt(newShiftUserId, 10));
+      if (!selectedUser) {
+        setStatusMsg({ text: "Vyberte platného zaměstnance.", error: true });
+        return;
+      }
+
+      const createdDates: Date[] = [];
+      const cursor = new Date(startDate);
+      while (cursor <= endDate) {
+        createdDates.push(new Date(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      const createdShifts: Shift[] = createdDates.map((shiftDate, index) => ({
+        id: Date.now() + index,
+        userId: selectedUser.id,
+        date: getLocalDateKey(shiftDate),
+        startTime: newShiftStartTime,
+        endTime: newShiftEndTime,
+        note: newShiftNote.trim() || null,
+        user: {
+          firstName: selectedUser.firstName,
+          lastName: selectedUser.lastName,
+        },
+      }));
+
+      const nextShifts = [...demoAssignedShifts, ...createdShifts];
+      setDemoAssignedShifts(nextShifts);
+      window.localStorage.setItem(DEMO_ASSIGNED_SHIFTS_KEY, JSON.stringify(nextShifts));
+      setStatusMsg({
+        text: createdShifts.length === 1 ? "Směna byla úspěšně naplánována." : `Naplánováno směn: ${createdShifts.length}.`,
+        error: false,
+      });
+      setNewShiftDate("");
+      setNewShiftEndDate("");
+      setNewShiftNote("");
+      return;
+    }
+
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -720,6 +894,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           userId: parseInt(newShiftUserId, 10),
           date: newShiftDate,
+          dateTo: newShiftEndDate || newShiftDate,
           startTime: newShiftStartTime,
           endTime: newShiftEndTime,
           note: newShiftNote,
@@ -728,6 +903,7 @@ export default function DashboardPage() {
       if (res.ok) {
         setStatusMsg({ text: "Směna byla úspěšně naplánována.", error: false });
         setNewShiftDate("");
+        setNewShiftEndDate("");
         setNewShiftNote("");
         loadDashboardData();
       } else {
@@ -745,6 +921,15 @@ export default function DashboardPage() {
   // Handle deleting a shift
   const handleDeleteShift = async (shiftId: number) => {
     if (!confirm("Opravdu chcete smazat tuto směnu?")) return;
+
+    if (isDemoMode) {
+      const nextShifts = demoAssignedShifts.filter((shift) => shift.id !== shiftId);
+      setDemoAssignedShifts(nextShifts);
+      window.localStorage.setItem(DEMO_ASSIGNED_SHIFTS_KEY, JSON.stringify(nextShifts));
+      setStatusMsg({ text: "Směna byla úspěšně smazána.", error: false });
+      return;
+    }
+
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -770,7 +955,7 @@ export default function DashboardPage() {
   const handleStartEditShift = (shift: Shift) => {
     setEditingShiftId(shift.id);
     // Normalize date to YYYY-MM-DD for the date input
-    setEditShiftDate(new Date(shift.date).toISOString().slice(0, 10));
+    setEditShiftDate(formatShiftDateKey(shift.date));
     setEditShiftStartTime(shift.startTime);
     setEditShiftEndTime(shift.endTime);
     setEditShiftNote(shift.note || "");
@@ -791,6 +976,26 @@ export default function DashboardPage() {
       setStatusMsg({ text: "Začátek a konec směny nesmí být shodné.", error: true });
       return;
     }
+
+    if (isDemoMode) {
+      const nextShifts = demoAssignedShifts.map((shift) => (
+        shift.id === shiftId
+          ? {
+              ...shift,
+              date: editShiftDate,
+              startTime: editShiftStartTime,
+              endTime: editShiftEndTime,
+              note: editShiftNote.trim() || null,
+            }
+          : shift
+      ));
+      setDemoAssignedShifts(nextShifts);
+      window.localStorage.setItem(DEMO_ASSIGNED_SHIFTS_KEY, JSON.stringify(nextShifts));
+      setStatusMsg({ text: "Směna byla úspěšně upravena.", error: false });
+      setEditingShiftId(null);
+      return;
+    }
+
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -831,12 +1036,14 @@ export default function DashboardPage() {
     return diffHours > 6.0 ? diffHours - 0.5 : diffHours;
   };
 
+  const payrollLogs = useMemo(
+    () => isDemoMode ? [...logs, ...generateDemoLogs(users, selectedMonth)] : logs,
+    [isDemoMode, logs, selectedMonth, users]
+  );
+
   // Precise Shift & Bonus Calculator (Afternoon 5%, Night 15%, Weekend 15%, Overtime, Auto Lunch Breaks)
   const calculateEmployeeStats = (empId: number) => {
-    const activeLogs = isDemoMode
-      ? [...logs, ...generateDemoLogs(users, selectedMonth)]
-      : logs;
-    const empLogs = activeLogs.filter((l) => l.userId === empId);
+    const empLogs = payrollLogs.filter((l) => l.userId === empId);
     let totalWorkHours = 0;
     let afternoonHours = 0;
     let nightHours = 0;
@@ -844,20 +1051,21 @@ export default function DashboardPage() {
     let hasAnomaly = false;
     let overlapsCount = 0;
 
-    // Detect Overlapping logs (Anti-Cheat check)
-    empLogs.forEach((logA, idxA) => {
-      if (logA.status === "ERROR") hasAnomaly = true;
-      const startA = new Date(logA.checkIn).getTime();
-      const endA = logA.checkOut ? new Date(logA.checkOut).getTime() : Date.now();
+    empLogs.forEach((log) => {
+      if (log.status === "ERROR") hasAnomaly = true;
+    });
 
-      empLogs.forEach((logB, idxB) => {
-        if (idxA !== idxB) {
-          const startB = new Date(logB.checkIn).getTime();
-          const endB = logB.checkOut ? new Date(logB.checkOut).getTime() : Date.now();
-          // Check intersection
-          if (startA < endB && startB < endA) {
-            overlapsCount++;
-          }
+    // Detect overlapping work logs. Lunch/doctor records can intentionally sit inside a work shift.
+    const workLogs = empLogs.filter((log) => log.logType === "WORK" && log.status !== "ERROR" && log.checkOut);
+    workLogs.forEach((logA, idxA) => {
+      const startA = new Date(logA.checkIn).getTime();
+      const endA = new Date(logA.checkOut as string).getTime();
+
+      workLogs.slice(idxA + 1).forEach((logB) => {
+        const startB = new Date(logB.checkIn).getTime();
+        const endB = new Date(logB.checkOut as string).getTime();
+        if (startA < endB && startB < endA) {
+          overlapsCount++;
         }
       });
     });
@@ -1002,6 +1210,39 @@ export default function DashboardPage() {
       setStatusMsg({ text: "Vyplňte všechna povinná pole.", error: true });
       return;
     }
+
+    if (isDemoMode) {
+      const displayName = `${newEmpFirstName} ${newEmpLastName}`;
+      const nextEmployeeNumber = String(5000 + demoCredentialUsers.length + 1);
+      setDemoCredentialUsers((prev) => [
+        ...prev,
+        {
+          username: newEmpUsername,
+          password: newEmpPassword,
+          displayName,
+          role: newEmpRole,
+          employeeNumber: nextEmployeeNumber,
+          firstName: newEmpFirstName,
+          lastName: newEmpLastName,
+          department: newEmpDepartment,
+          email: newEmpEmail || undefined,
+          pin: newEmpPin || undefined,
+          hourlyFund: 40,
+        },
+      ]);
+      setStatusMsg({ text: `Zaměstnanec ${displayName} byl přidán.`, error: false });
+      setNewEmpUsername("");
+      setNewEmpPassword("");
+      setNewEmpRole("EMPLOYEE");
+      setNewEmpFirstName("");
+      setNewEmpLastName("");
+      setNewEmpDepartment("");
+      setNewEmpEmail("");
+      setNewEmpPin("");
+      setIdCardFile(null);
+      return;
+    }
+
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -1047,6 +1288,16 @@ export default function DashboardPage() {
   // Handle removing an employee credential
   const handleRemoveEmployee = async (username: string, displayName: string) => {
     if (!confirm(`Opravdu chcete odebrat zaměstnance ${displayName} (${username})?`)) return;
+
+    if (isDemoMode) {
+      setDemoCredentialUsers((prev) => prev.filter((cred) => cred.username !== username));
+      if (selectedCredential?.username === username) {
+        setSelectedCredential(null);
+      }
+      setStatusMsg({ text: `Zaměstnanec ${displayName} byl odebrán.`, error: false });
+      return;
+    }
+
     setIsUpdating(true);
     setStatusMsg(null);
     try {
@@ -1067,12 +1318,25 @@ export default function DashboardPage() {
     }
   };
 
-  // Open the detail panel for one employee (loads full .env credentials incl. password)
+  // Open the detail panel for one employee.
   const handleSelectEmployee = async (username: string) => {
     setShowPassword(false);
     setCopiedField(null);
     setDetailLoading(true);
     setSelectedCredential({ username, displayName: "", role: "", employeeNumber: "" });
+
+    if (isDemoMode) {
+      const credential = demoCredentialUsers.find((cred) => cred.username === username);
+      if (credential) {
+        setSelectedCredential(credential);
+      } else {
+        setStatusMsg({ text: "Detail se nepodařilo načíst.", error: true });
+        setSelectedCredential(null);
+      }
+      setDetailLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/auth/employees?username=${encodeURIComponent(username)}`);
       const data = await res.json();
@@ -1110,19 +1374,22 @@ export default function DashboardPage() {
     ? [...liveOccupants.visitors, ...demoVisitors]
     : liveOccupants.visitors;
 
-  const totalInsideCount = currentVisitors.filter(v => !v.checkOut).length + currentEmployees.filter(e => !e.checkOut).length;
-  const employeesInsideCount = currentEmployees.filter(e => !e.checkOut).length;
-  const visitorsInsideCount = currentVisitors.filter(v => !v.checkOut).length;
+  const activeEmployeeList = currentEmployees.filter((e) => !e.checkOut);
+  const activeVisitorList = currentVisitors.filter((v) => !v.checkOut);
+  const totalInsideCount = activeVisitorList.length + activeEmployeeList.length;
+  const employeesInsideCount = activeEmployeeList.length;
+  const visitorsInsideCount = activeVisitorList.length;
 
   const activeRequests = isDemoMode
     ? [...requests, ...demoRequests.filter(req => !processedDemoReqs.includes(req.id))]
     : requests;
+  const activeCredentialUsers = isDemoMode ? demoCredentialUsers : credentialUsers;
 
   // Payroll CSV Generator
   const handleExportPayroll = () => {
     const csvHeaders = ["Osobní číslo", "Příjmení", "Jméno", "Oddělení", "Odpracované hodiny (Čisté)", "Odpolední hodiny (5%)", "Noční hodiny (15%)", "Víkendové hodiny (15%)", "Měsíční Fond", "Saldo (Přesčasy)", "Anomálie v docházce"];
     
-    const rows = users.map((user) => {
+    const rows = users.filter((user) => user.role !== "CEO").map((user) => {
       const stats = calculateEmployeeStats(user.id);
       const fund = user.hourlyFund * 4;
       return [
@@ -1155,6 +1422,7 @@ export default function DashboardPage() {
 
   // Filtered employees listing
   const filteredUsers = users.filter((u) => {
+    if (u.role === "CEO") return false;
     const query = searchQuery.toLowerCase();
     return (
       `${u.firstName} ${u.lastName}`.toLowerCase().includes(query) ||
@@ -1162,6 +1430,44 @@ export default function DashboardPage() {
       u.department.toLowerCase().includes(query)
     );
   });
+
+  const payrollRows = filteredUsers.map((user) => ({
+    user,
+    stats: calculateEmployeeStats(user.id),
+  }));
+  const payrollOverviewRows = users
+    .filter((user) => user.role !== "CEO")
+    .map((user) => ({
+      user,
+      stats: calculateEmployeeStats(user.id),
+    }));
+  const payrollWarningCount = payrollOverviewRows.filter(({ stats }) => stats.hasAnomaly || stats.hasOverlap).length;
+  const negativeBalanceCount = payrollOverviewRows.filter(({ stats }) => stats.balance < 0).length;
+  const overtimeCount = payrollOverviewRows.filter(({ stats }) => stats.balance > 0).length;
+  const payrollTotalHours = payrollOverviewRows.reduce((sum, { stats }) => sum + stats.total, 0);
+  const scheduledShifts = isDemoMode ? demoAssignedShifts : allShifts;
+  const todayKey = getLocalDateKey();
+  const selectedMonthLabel = formatMonthLabel(selectedMonth);
+  const todaysShifts = scheduledShifts.filter((shift) => formatShiftDateKey(shift.date) === todayKey);
+  const upcomingShifts = scheduledShifts
+    .filter((shift) => formatShiftDateKey(shift.date) >= todayKey)
+    .sort((a, b) => `${formatShiftDateKey(a.date)} ${a.startTime}`.localeCompare(`${formatShiftDateKey(b.date)} ${b.startTime}`));
+  const presenceSummary = totalInsideCount === 0
+    ? "Budova je prázdná"
+    : `${totalInsideCount} osob uvnitř`;
+  const openShiftPlanner = (employee?: User | null) => {
+    const nextWeek = getWeekRange(1);
+
+    setActiveTab("shifts");
+    setNewShiftDate(nextWeek.start);
+    setNewShiftEndDate(nextWeek.end);
+
+    if (employee) {
+      const userId = String(employee.id);
+      setNewShiftUserId(userId);
+      setShiftFilterUserId(userId);
+    }
+  };
 
   if (!isAuthorized) {
     return (
@@ -1175,16 +1481,27 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen text-[#1d1d1f] pb-16 font-sans antialiased selection:bg-black/[0.06]">
 
-      <header className="lg:sticky lg:top-0 z-30 glass-bar border-b border-black/[0.08] px-6 py-4">
+      <header className="lg:sticky lg:top-0 z-30 glass-bar border-b border-black/[0.08] px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
               <p className="eyebrow">Management</p>
-              <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">CEO Dashboard</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Provozní dashboard</h1>
+              <p className="text-xs font-semibold text-[#6e6e73] mt-1">
+                {presenceSummary} · {selectedMonthLabel}
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => openShiftPlanner()}
+              className="btn-primary !py-2 !px-4"
+            >
+              <CalendarPlus className="h-4 w-4" />
+              Přidat směnu
+            </button>
 
             {/* Date month selector */}
             <input
@@ -1221,7 +1538,11 @@ export default function DashboardPage() {
         {/* TILES TICKERS: Real-time counts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
-          <div className="stat-card animate-rise">
+          <button
+            type="button"
+            onClick={() => setActiveTab("presence_approvals")}
+            className="stat-card animate-rise text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/20"
+          >
             <div className="flex items-start justify-between">
               <span className="eyebrow">Osob v budově celkem</span>
               <span className="stat-icon bg-black/[0.04] text-[#6e6e73]"><Users className="h-5 w-5" /></span>
@@ -1230,9 +1551,14 @@ export default function DashboardPage() {
               <strong className="text-4xl font-bold text-[#1d1d1f] tabular-nums">{totalInsideCount}</strong>
               <span className="text-[11px] font-bold text-[#86868b]">aktuální stav</span>
             </div>
-          </div>
+          </button>
 
-          <div className="stat-card animate-rise" style={{ animationDelay: "40ms" }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab("presence_approvals")}
+            className="stat-card animate-rise text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/20"
+            style={{ animationDelay: "40ms" }}
+          >
             <div className="flex items-start justify-between">
               <span className="eyebrow">Zaměstnanci uvnitř</span>
               <span className="stat-icon bg-emerald-500/15 text-emerald-600"><UserCheck className="h-5 w-5" /></span>
@@ -1241,9 +1567,14 @@ export default function DashboardPage() {
               <strong className="text-4xl font-bold text-emerald-600 tabular-nums">{employeesInsideCount}</strong>
               <span className="text-[11px] font-bold text-[#86868b]">příchody logovány</span>
             </div>
-          </div>
+          </button>
 
-          <div className="stat-card animate-rise" style={{ animationDelay: "80ms" }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab("presence_approvals")}
+            className="stat-card animate-rise text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/20"
+            style={{ animationDelay: "80ms" }}
+          >
             <div className="flex items-start justify-between">
               <span className="eyebrow">Zákazníci / Hosté</span>
               <span className="stat-icon bg-amber-500/15 text-amber-600"><Building2 className="h-5 w-5" /></span>
@@ -1252,9 +1583,14 @@ export default function DashboardPage() {
               <strong className="text-4xl font-bold text-amber-600 tabular-nums">{visitorsInsideCount}</strong>
               <span className="text-[11px] font-bold text-[#86868b]">kniha návštěv</span>
             </div>
-          </div>
+          </button>
 
-          <div className="stat-card animate-rise" style={{ animationDelay: "120ms" }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab("presence_approvals")}
+            className="stat-card animate-rise text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/20"
+            style={{ animationDelay: "120ms" }}
+          >
             <div className="flex items-start justify-between">
               <span className="eyebrow">Nevyřízené korekce</span>
               <span className={`stat-icon ${activeRequests.length > 0 ? "bg-rose-500/15 text-rose-600" : "bg-black/[0.06] text-[#86868b]"}`}><FileCheck className="h-5 w-5" /></span>
@@ -1265,24 +1601,36 @@ export default function DashboardPage() {
               </strong>
               <span className="text-[11px] font-bold text-[#86868b]">žádostí ke schválení</span>
             </div>
-          </div>
+          </button>
 
         </div>
 
         {/* Tab Selector */}
-        <div className="flex border-b border-black/[0.08] gap-6 overflow-x-auto">
-          <button onClick={() => setActiveTab("presence_approvals")} className={`tab whitespace-nowrap ${activeTab === "presence_approvals" ? "tab-active" : ""}`}>
-            Přítomnost &amp; Korekce ({totalInsideCount + activeRequests.length})
-          </button>
-          <button onClick={() => setActiveTab("payroll")} className={`tab whitespace-nowrap ${activeTab === "payroll" ? "tab-active" : ""}`}>
-            Zpracování mezd
-          </button>
-          <button onClick={() => setActiveTab("shifts")} className={`tab whitespace-nowrap ${activeTab === "shifts" ? "tab-active" : ""}`}>
-            Plánování směn ({allShifts.length})
-          </button>
-          <button onClick={() => setActiveTab("employees_mgmt")} className={`tab whitespace-nowrap ${activeTab === "employees_mgmt" ? "tab-active" : ""}`}>
-            Správa zaměstnanců ({credentialUsers.length})
-          </button>
+        <div className="flex flex-wrap gap-2 rounded-2xl border border-white/80 bg-white/45 p-1 shadow-sm">
+          {[
+            { id: "presence_approvals", label: "Přítomnost", count: totalInsideCount + activeRequests.length },
+            { id: "payroll", label: "Mzdy", count: payrollWarningCount > 0 ? payrollWarningCount : payrollOverviewRows.length },
+            { id: "shifts", label: "Směny", count: scheduledShifts.length },
+            { id: "employees_mgmt", label: "Zaměstnanci", count: activeCredentialUsers.length },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                activeTab === tab.id
+                  ? "bg-white text-[#1d1d1f] shadow-sm"
+                  : "text-[#6e6e73] hover:bg-white/60 hover:text-[#1d1d1f]"
+              }`}
+            >
+              {tab.label}
+              <span className={`rounded-full px-2 py-0.5 text-[10px] ${
+                activeTab === tab.id ? "bg-[#0071e3]/10 text-[#0071e3]" : "bg-black/[0.04] text-[#86868b]"
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
 
         {activeTab === "presence_approvals" && (
@@ -1290,7 +1638,7 @@ export default function DashboardPage() {
             
             {/* LEFT COLUMN: LIVE presence list */}
             <div className="lg:col-span-6 space-y-8">
-              <div className="surface card-accent card-accent-rose text-[#1d1d1f] p-5">
+              <div className="surface card-accent text-[#1d1d1f] p-5">
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-widest text-[#1d1d1f] flex items-center gap-1.5">
@@ -1304,7 +1652,7 @@ export default function DashboardPage() {
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 premium-scroll">
                     
                     {/* Active Employees */}
-                    {currentEmployees.filter(e => !e.checkOut).map((occ) => (
+                    {activeEmployeeList.map((occ) => (
                       <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
                           <div className="font-bold text-[#1d1d1f]">{occ.lastName} {occ.firstName}</div>
@@ -1324,14 +1672,14 @@ export default function DashboardPage() {
                     ))}
 
                     {/* Active Visitors */}
-                    {currentVisitors.filter(v => !v.checkOut).map((occ) => (
+                    {activeVisitorList.map((occ) => (
                       <div key={occ.id} className="bg-black/[0.04] border border-black/[0.08] rounded-xl p-3 text-xs flex justify-between items-center gap-4">
                         <div>
                           <div className="font-bold text-amber-700">Host: {occ.lastName} {occ.firstName}</div>
                           <div className="text-[10px] text-[#6e6e73] mt-0.5">Firma: {occ.organization}</div>
                           <div className="text-[9px] text-amber-600 font-mono mt-1">Příchod: {new Date(occ.checkIn).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" })}</div>
                         </div>
-                        <span className="bg-amber-500/15 border border-amber-500/30 text-amber-808 px-2 py-0.5 rounded-[6px] text-[9px] font-bold uppercase tracking-wider">
+                        <span className="bg-amber-500/15 border border-amber-500/30 text-amber-700 px-2 py-0.5 rounded-[6px] text-[9px] font-bold uppercase tracking-wider">
                           Zakázka / Host
                         </span>
                       </div>
@@ -1353,7 +1701,7 @@ export default function DashboardPage() {
 
                 {activeRequests.length === 0 ? (
                   <div className="py-8 text-center text-xs text-[#6e6e73] italic bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold uppercase tracking-wider">
-                    Žádné pending žádosti k vyřízení.
+                    Žádné žádosti k vyřízení.
                   </div>
                 ) : (
                   <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1 premium-scroll">
@@ -1428,6 +1776,32 @@ export default function DashboardPage() {
                 </button>
               </div>
 
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div className="rounded-xl border border-black/[0.08] bg-black/[0.03] p-3">
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">
+                    <Activity className="h-3.5 w-3.5" />
+                    Odpracováno
+                  </span>
+                  <strong className="mt-1 block text-lg font-bold text-[#1d1d1f]">{payrollTotalHours.toFixed(1)}h</strong>
+                </div>
+                <div className="rounded-xl border border-black/[0.08] bg-black/[0.03] p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Přesčas</span>
+                  <strong className="mt-1 block text-lg font-bold text-emerald-600">{overtimeCount}</strong>
+                </div>
+                <div className="rounded-xl border border-black/[0.08] bg-black/[0.03] p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Pod fondem</span>
+                  <strong className={`mt-1 block text-lg font-bold ${negativeBalanceCount > 0 ? "text-rose-600" : "text-[#86868b]"}`}>
+                    {negativeBalanceCount}
+                  </strong>
+                </div>
+                <div className="rounded-xl border border-black/[0.08] bg-black/[0.03] p-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Varování</span>
+                  <strong className={`mt-1 block text-lg font-bold ${payrollWarningCount > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                    {payrollWarningCount}
+                  </strong>
+                </div>
+              </div>
+
               {/* Filters search */}
               <div className="relative mb-6">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-[#6e6e73]" />
@@ -1455,8 +1829,7 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/5 bg-white text-[#1d1d1f]">
-                    {filteredUsers.map((user) => {
-                      const stats = calculateEmployeeStats(user.id);
+                    {payrollRows.map(({ user, stats }) => {
                       const isOvertime = stats.balance >= 0;
 
                       return (
@@ -1482,7 +1855,7 @@ export default function DashboardPage() {
                                 </span>
                               )}
                               {stats.hasOverlap && (
-                                <span className="bg-amber-500/15 text-amber-700 border border-amber-500/30 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Detekována časová kolize (překryvy dvou logů v jeden day!)">
+                                <span className="bg-amber-500/15 text-amber-700 border border-amber-500/30 font-sans font-bold px-2 py-0.5 rounded text-[9px]" title="Detekována časová kolize mezi dvěma pracovními záznamy.">
                                   KOLIZE
                                 </span>
                               )}
@@ -1508,9 +1881,14 @@ export default function DashboardPage() {
             {/* LEFT: New Shift Scheduler Form */}
             <div className="lg:col-span-4 surface card-accent p-6">
               
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4">
-                Naplánovat novou směnu
-              </h3>
+              <div className="mb-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f]">
+                  Přidat směnu zaměstnanci
+                </h3>
+                <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest mt-1">
+                  Jednotlivý den nebo celý pracovní týden
+                </p>
+              </div>
 
               <form onSubmit={handleCreateShift} className="space-y-4">
                 <div>
@@ -1519,7 +1897,10 @@ export default function DashboardPage() {
                   </label>
                   <select
                     value={newShiftUserId}
-                    onChange={(e) => setNewShiftUserId(e.target.value)}
+                    onChange={(e) => {
+                      setNewShiftUserId(e.target.value);
+                      setShiftFilterUserId(e.target.value);
+                    }}
                     required
                     className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-semibold text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   >
@@ -1534,15 +1915,57 @@ export default function DashboardPage() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
-                    Datum směny
+                    Rychlé nastavení období
                   </label>
-                  <input
-                    type="date"
-                    value={newShiftDate}
-                    onChange={(e) => setNewShiftDate(e.target.value)}
-                    required
-                    className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Tento týden", offset: 0 },
+                      { label: "Příští týden", offset: 1 },
+                    ].map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          const range = getWeekRange(preset.offset);
+                          setNewShiftDate(range.start);
+                          setNewShiftEndDate(range.end);
+                        }}
+                        className="rounded-xl border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#1d1d1f] transition-all hover:bg-black/[0.06] active:scale-[0.98]"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                      Datum od
+                    </label>
+                    <input
+                      type="date"
+                      value={newShiftDate}
+                      onChange={(e) => {
+                        setNewShiftDate(e.target.value);
+                        if (!newShiftEndDate) setNewShiftEndDate(e.target.value);
+                      }}
+                      required
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                      Datum do
+                    </label>
+                    <input
+                      type="date"
+                      value={newShiftEndDate}
+                      min={newShiftDate || undefined}
+                      onChange={(e) => setNewShiftEndDate(e.target.value)}
+                      className="block w-full p-2.5 bg-black/[0.04] border border-black/[0.08] rounded-xl text-xs font-mono text-[#1d1d1f] outline-none focus:border-[#0071e3]"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1622,13 +2045,21 @@ export default function DashboardPage() {
             <div className="lg:col-span-8 surface card-accent p-6">
               
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f]">
-                  Všechny naplánované směny (Rozpis)
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f]">
+                    Rozpis směn
+                  </h3>
+                  <p className="text-[10px] text-[#6e6e73] font-bold uppercase tracking-widest mt-0.5">
+                    Dnes {todaysShifts.length} · Budoucí {upcomingShifts.length} · Celkem {scheduledShifts.length}
+                  </p>
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
                     value={shiftFilterUserId}
-                    onChange={(e) => setShiftFilterUserId(e.target.value)}
+                    onChange={(e) => {
+                      setShiftFilterUserId(e.target.value);
+                      if (e.target.value) setNewShiftUserId(e.target.value);
+                    }}
                     className="p-2 bg-black/[0.04] border border-black/[0.08] rounded-lg text-[11px] font-semibold text-[#1d1d1f] outline-none focus:border-[#0071e3]"
                   >
                     <option value="">Všichni zaměstnanci</option>
@@ -1657,13 +2088,13 @@ export default function DashboardPage() {
               </div>
 
               {(() => {
-                const filteredShifts = allShifts.filter((s) => {
+                const filteredShifts = scheduledShifts.filter((s) => {
                   if (shiftFilterUserId && s.userId !== parseInt(shiftFilterUserId, 10)) return false;
-                  if (shiftFilterDate && new Date(s.date).toISOString().slice(0, 10) !== shiftFilterDate) return false;
+                  if (shiftFilterDate && formatShiftDateKey(s.date) !== shiftFilterDate) return false;
                   return true;
-                });
+                }).sort((a, b) => `${formatShiftDateKey(a.date)} ${a.startTime}`.localeCompare(`${formatShiftDateKey(b.date)} ${b.startTime}`));
 
-                if (allShifts.length === 0) {
+                if (scheduledShifts.length === 0) {
                   return (
                     <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                       Žádné naplánované směny v systému.
@@ -1687,12 +2118,17 @@ export default function DashboardPage() {
                       ? computeNetHours(editShiftStartTime, editShiftEndTime)
                       : computeNetHours(shift.startTime, shift.endTime);
 
+                    const shiftUser = shift.user || users.find((u) => u.id === shift.userId);
+                    const userName = shiftUser
+                      ? `${shiftUser.lastName} ${shiftUser.firstName}`
+                      : `Uživatel #${shift.userId}`;
+
                     if (isEditing) {
                       return (
                         <div key={shift.id} className="py-3 bg-black/[0.04] px-3.5 rounded-xl">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.06] border border-black/[0.08] text-[#6e6e73]">
-                              {shift.user.lastName} {shift.user.firstName}
+                              {userName}
                             </span>
                             <span className="text-[10px] font-bold text-[#6e6e73] uppercase tracking-wide">Úprava směny</span>
                           </div>
@@ -1779,7 +2215,7 @@ export default function DashboardPage() {
                               {new Date(shift.date).toLocaleDateString("cs-CZ", { weekday: "short", day: "numeric", month: "numeric" })}
                             </span>
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.04] border border-black/[0.08] text-[#6e6e73] font-sans">
-                              {shift.user.lastName} {shift.user.firstName}
+                              {userName}
                             </span>
                           </div>
                           <div className="text-[#6e6e73] font-sans">
@@ -2015,7 +2451,7 @@ export default function DashboardPage() {
               </form>
 
               <div className="mt-4 p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-[10px] text-emerald-700 font-medium leading-relaxed">
-                <strong>Info:</strong> Zaměstnanec se uloží do <code className="font-mono bg-emerald-100 px-1 rounded">.env</code> (přihlašovací údaje) i do <code className="font-mono bg-emerald-100 px-1 rounded">databáze</code> (tabulka users v PgAdmin). Odebrání zaměstnance ho deaktivuje v DB.
+                <strong>Info:</strong> Po přidání může zaměstnanec používat portál, docházku i přístup přes PIN.
               </div>
             </div>
 
@@ -2024,17 +2460,18 @@ export default function DashboardPage() {
 
               <h3 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 flex items-center gap-2">
                 <Users2 className="h-4 w-4 text-[#6e6e73]" />
-                Registrovaní zaměstnanci ({credentialUsers.length})
+                Registrovaní zaměstnanci ({activeCredentialUsers.length})
               </h3>
 
-              {credentialUsers.length === 0 ? (
+              {activeCredentialUsers.length === 0 ? (
                 <div className="py-20 text-center text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] rounded-xl font-bold text-xs uppercase tracking-wider">
                   Žádní registrovaní zaměstnanci.
                 </div>
               ) : (
                 <div className="divide-y divide-black/5 max-h-[550px] overflow-y-auto px-2">
-                  {credentialUsers.map((cred) => {
+                  {activeCredentialUsers.map((cred) => {
                     const dbUser = users.find((u) => u.employeeNumber === cred.employeeNumber);
+                    const department = isDemoMode ? cred.department : dbUser?.department;
                     return (
                       <div
                         key={cred.username}
@@ -2054,19 +2491,19 @@ export default function DashboardPage() {
                             }`}>
                               {cred.role}
                             </span>
-                            {dbUser && (
+                            {department && (
                               <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-black/[0.04] border border-black/[0.08] text-[#6e6e73]">
-                                {dbUser.department}
+                                {department}
                               </span>
                             )}
-                            {dbUser && (
+                            {!isDemoMode && dbUser && (
                               <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider ${
                                 true ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-700" : "bg-rose-500/15 border border-rose-500/30 text-rose-700"
                               }`}>
                                 V databázi
                               </span>
                             )}
-                            {!dbUser && (
+                            {!isDemoMode && !dbUser && (
                               <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-500/15 border border-rose-500/30 text-rose-700">
                                 Chybí v DB
                               </span>
@@ -2079,17 +2516,31 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveEmployee(cred.username, cred.displayName);
-                          }}
-                          disabled={isUpdating}
-                          className="inline-flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50 self-end sm:self-auto shrink-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Odebrat
-                        </button>
+                        <div className="flex flex-wrap gap-2 self-end sm:self-auto justify-end shrink-0">
+                          {dbUser && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openShiftPlanner(dbUser);
+                              }}
+                              className="inline-flex items-center gap-1 bg-[#0071e3]/10 hover:bg-[#0071e3]/15 border border-[#0071e3]/25 text-[#0071e3] font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96]"
+                            >
+                              <CalendarPlus className="h-3 w-3" />
+                              Směna
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveEmployee(cred.username, cred.displayName);
+                            }}
+                            disabled={isUpdating}
+                            className="inline-flex items-center gap-1 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wide transition-all active:scale-[0.96] disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Odebrat
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -2119,7 +2570,7 @@ export default function DashboardPage() {
                   {selectedCredential.displayName || selectedCredential.username}
                 </h3>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-[#6e6e73] mt-0.5">
-                  Přihlašovací údaje (.env)
+                  Přihlašovací údaje
                 </p>
               </div>
               <button

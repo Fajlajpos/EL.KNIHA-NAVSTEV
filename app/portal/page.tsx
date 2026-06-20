@@ -4,14 +4,21 @@ import { useState, useEffect, useRef } from "react";
 import {
   Calendar,
   AlertTriangle,
+  Coffee,
   Send,
   Loader2,
+  CalendarPlus,
   CheckCircle,
   XCircle,
   HelpCircle,
   FileText,
   PlusCircle,
   Bot,
+  Pencil,
+  PlayCircle,
+  StopCircle,
+  Trash2,
+  Utensils,
   X,
 } from "lucide-react";
 
@@ -27,6 +34,7 @@ interface Employee {
 
 interface PortalShift {
   id: number;
+  userId?: number;
   date: string;
   startTime: string;
   endTime: string;
@@ -56,6 +64,72 @@ interface CorrectionRequest {
   status: string; // PENDING, APPROVED, REJECTED
   createdAt: string;
 }
+
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getWeekRange = (weekOffset: number) => {
+  const today = new Date();
+  const day = today.getDay();
+  const distanceToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + distanceToMonday + weekOffset * 7);
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  return {
+    start: getLocalDateKey(monday),
+    end: getLocalDateKey(friday),
+  };
+};
+
+const formatShiftDateKey = (dateValue: string) => {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
+  return getLocalDateKey(date);
+};
+
+const calculateShiftNetHours = (startTime: string, endTime: string) => {
+  const [startHour, startMinute] = startTime.split(":").map((part) => parseInt(part, 10));
+  const [endHour, endMinute] = endTime.split(":").map((part) => parseInt(part, 10));
+  if ([startHour, startMinute, endHour, endMinute].some((value) => Number.isNaN(value))) return 0;
+
+  let diffHours = ((endHour * 60 + endMinute) - (startHour * 60 + startMinute)) / 60;
+  if (diffHours < 0) diffHours += 24;
+  return diffHours > 6.0 ? diffHours - 0.5 : diffHours;
+};
+
+const getLogTypeLabel = (type: string) => {
+  switch (type) {
+    case "WORK":
+      return "Práce";
+    case "LUNCH":
+      return "Oběd";
+    case "BREAK":
+      return "Přestávka";
+    case "DOCTOR":
+      return "Lékař";
+    case "BUSINESS_TRIP":
+      return "Služební cesta";
+    default:
+      return type;
+  }
+};
+
+const DEMO_ASSIGNED_SHIFTS_KEY = "checkni-demo-assigned-shifts";
+const DEMO_DELETED_SHIFTS_KEY = "checkni-demo-deleted-shifts";
+
+const SHIFT_PRESETS = [
+  { label: "Ranní", start: "06:00", end: "14:30" },
+  { label: "Odpolední", start: "14:00", end: "22:30" },
+  { label: "Denní", start: "08:00", end: "16:30" },
+  { label: "Noční", start: "22:00", end: "06:00" },
+];
 
 // ============================================
 // DEMO MODE MOCK DATA & GENERATORS
@@ -179,15 +253,29 @@ const generateDemoLogsForUser = (user: { id: number; employeeNumber: string }) =
   return demoLogsList;
 };
 
-const generateDemoShiftsForUser = () => {
-  const year = 2026;
-  const list: PortalShift[] = [
-    { id: 7001, date: `${year}-06-01`, startTime: "06:00", endTime: "14:30", note: "Ranní směna" },
-    { id: 7002, date: `${year}-06-02`, startTime: "06:00", endTime: "14:30", note: "Ranní směna" },
-    { id: 7003, date: `${year}-06-03`, startTime: "06:00", endTime: "14:30", note: "Ranní" },
-    { id: 7004, date: `${year}-06-04`, startTime: "06:00", endTime: "14:30", note: "Ranní" },
-    { id: 7005, date: `${year}-06-05`, startTime: "06:00", endTime: "14:30", note: "Ranní" }
-  ];
+const generateDemoShiftsForUser = (user: { id: number }) => {
+  const today = new Date();
+  const list: PortalShift[] = [];
+  const baseId = 700000 + user.id * 100;
+
+  for (let offset = 0; offset < 10; offset++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
+    const day = date.getDay();
+    if (offset !== 0 && (day === 0 || day === 6)) continue;
+
+    list.push({
+      id: baseId + list.length + 1,
+      userId: user.id,
+      date: getLocalDateKey(date),
+      startTime: offset % 2 === 0 ? "06:00" : "08:00",
+      endTime: offset % 2 === 0 ? "14:30" : "16:30",
+      note: offset === 0 ? "Dnešní směna" : offset % 2 === 0 ? "Ranní směna" : "Denní směna",
+    });
+
+    if (list.length >= 6) break;
+  }
+
   return list;
 };
 
@@ -214,6 +302,9 @@ export default function PortalPage() {
   // Demo Mode States
   const [isDemoMode, setIsDemoMode] = useState(true);
   const [processedDemoReqs] = useState<number[]>([]);
+  const [demoActionLogs, setDemoActionLogs] = useState<AttendanceLog[]>([]);
+  const [demoAssignedShifts, setDemoAssignedShifts] = useState<PortalShift[]>([]);
+  const [demoDeletedShiftIds, setDemoDeletedShiftIds] = useState<number[]>([]);
 
   // AI Chatbot States
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -232,6 +323,38 @@ export default function PortalPage() {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages, isChatOpen]);
+
+  useEffect(() => {
+    const loadStoredShifts = () => {
+      try {
+        const stored = window.localStorage.getItem(DEMO_ASSIGNED_SHIFTS_KEY);
+        setDemoAssignedShifts(stored ? JSON.parse(stored) : []);
+      } catch {
+        setDemoAssignedShifts([]);
+      }
+
+      try {
+        const storedDeleted = window.localStorage.getItem(DEMO_DELETED_SHIFTS_KEY);
+        setDemoDeletedShiftIds(storedDeleted ? JSON.parse(storedDeleted) : []);
+      } catch {
+        setDemoDeletedShiftIds([]);
+      }
+    };
+
+    loadStoredShifts();
+    window.addEventListener("storage", loadStoredShifts);
+    return () => window.removeEventListener("storage", loadStoredShifts);
+  }, []);
+
+  const persistDemoAssignedShifts = (nextShifts: PortalShift[]) => {
+    setDemoAssignedShifts(nextShifts);
+    window.localStorage.setItem(DEMO_ASSIGNED_SHIFTS_KEY, JSON.stringify(nextShifts));
+  };
+
+  const persistDemoDeletedShiftIds = (nextIds: number[]) => {
+    setDemoDeletedShiftIds(nextIds);
+    window.localStorage.setItem(DEMO_DELETED_SHIFTS_KEY, JSON.stringify(nextIds));
+  };
 
   const handleSendChatMessage = async (textToSend?: string) => {
     const messageText = textToSend || chatInput;
@@ -325,13 +448,28 @@ export default function PortalPage() {
   const [requests, setRequests] = useState<CorrectionRequest[]>([]);
   const [shifts, setShifts] = useState<PortalShift[]>([]);
 
+  const activeDemoAssignedShifts = activeEmployee
+    ? demoAssignedShifts.filter((shift) => shift.userId === activeEmployee.id)
+    : [];
+  const baseDemoShifts = activeEmployee ? generateDemoShiftsForUser(activeEmployee) : [];
+  const activeDemoShifts = [
+    ...baseDemoShifts
+      .filter((shift) => !demoDeletedShiftIds.includes(shift.id))
+      .map((shift) => activeDemoAssignedShifts.find((assignedShift) => assignedShift.id === shift.id) || shift),
+    ...activeDemoAssignedShifts.filter(
+      (shift) => !demoDeletedShiftIds.includes(shift.id) && !baseDemoShifts.some((baseShift) => baseShift.id === shift.id)
+    ),
+  ].filter((shift) => !demoDeletedShiftIds.includes(shift.id));
+
   const activeLogs = isDemoMode && activeEmployee
-    ? generateDemoLogsForUser(activeEmployee)
+    ? [...generateDemoLogsForUser(activeEmployee), ...demoActionLogs.filter((log) => log.userId === activeEmployee.id)]
+        .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime())
     : logs;
 
-  const activeShifts = isDemoMode && activeEmployee
-    ? generateDemoShiftsForUser()
-    : shifts;
+  const activeShifts = (isDemoMode && activeEmployee
+    ? activeDemoShifts
+    : shifts
+  ).slice().sort((a, b) => `${formatShiftDateKey(a.date)} ${a.startTime}`.localeCompare(`${formatShiftDateKey(b.date)} ${b.startTime}`));
 
   const activeRequests = isDemoMode && activeEmployee
     ? [
@@ -340,6 +478,17 @@ export default function PortalPage() {
       ]
     : requests;
   const [activeTab, setActiveTab] = useState<"attendance" | "shifts">("attendance");
+
+  const [portalShiftDate, setPortalShiftDate] = useState("");
+  const [portalShiftEndDate, setPortalShiftEndDate] = useState("");
+  const [portalShiftStartTime, setPortalShiftStartTime] = useState("08:00");
+  const [portalShiftEndTime, setPortalShiftEndTime] = useState("16:30");
+  const [portalShiftNote, setPortalShiftNote] = useState("");
+  const [editingShiftId, setEditingShiftId] = useState<number | null>(null);
+  const [editShiftDate, setEditShiftDate] = useState("");
+  const [editShiftStartTime, setEditShiftStartTime] = useState("");
+  const [editShiftEndTime, setEditShiftEndTime] = useState("");
+  const [editShiftNote, setEditShiftNote] = useState("");
 
   const [loggedInEmployeeNumber, setLoggedInEmployeeNumber] = useState<string | null>(null);
   const [loggedInRole, setLoggedInRole] = useState<string | null>(null);
@@ -420,16 +569,20 @@ export default function PortalPage() {
       if (res.ok) {
         const data = await res.json();
         setEmployees(data);
+        const selectableEmployees = loggedInRole === "CEO"
+          ? data.filter((employee: Employee) => employee.role !== "CEO")
+          : data;
+
         // Auto-select logged-in employee by employeeNumber
-        if (loggedInEmployeeNumber) {
+        if (loggedInRole !== "CEO" && loggedInEmployeeNumber) {
           const me = data.find((e: Employee) => e.employeeNumber === loggedInEmployeeNumber);
           if (me) {
             setActiveEmployee(me);
             return;
           }
         }
-        if (data.length > 0) {
-          setActiveEmployee(data[0]);
+        if (selectableEmployees.length > 0) {
+          setActiveEmployee(selectableEmployees[0]);
         }
       }
     } catch (err) {
@@ -472,7 +625,7 @@ export default function PortalPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isAuthorized) loadEmployees();
-  }, [isAuthorized, loggedInEmployeeNumber]);
+  }, [isAuthorized, loggedInEmployeeNumber, loggedInRole]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -569,6 +722,309 @@ export default function PortalPage() {
     }
   };
 
+  const handleAttendanceAction = async (action: string) => {
+    if (!activeEmployee) return;
+
+    const messages: Record<string, string> = {
+      START_WORK: "Směna byla zahájena.",
+      START_LUNCH: "Obědová pauza byla zahájena.",
+      END_LUNCH: "Obědová pauza byla ukončena.",
+      START_BREAK: "Přestávka byla zahájena.",
+      END_BREAK: "Přestávka byla ukončena.",
+      END_SHIFT: "Směna byla ukončena.",
+    };
+
+    if (isDemoMode) {
+      const now = new Date().toISOString();
+      const actionConfig: Record<string, { closeTypes?: string[]; openType?: string; note: string }> = {
+        START_WORK: { closeTypes: ["LUNCH", "BREAK"], openType: "WORK", note: "Začátek směny" },
+        START_LUNCH: { closeTypes: ["WORK", "BREAK"], openType: "LUNCH", note: "Obědová pauza" },
+        END_LUNCH: { closeTypes: ["LUNCH"], openType: "WORK", note: "Návrat z oběda" },
+        START_BREAK: { closeTypes: ["WORK"], openType: "BREAK", note: "Přestávka" },
+        END_BREAK: { closeTypes: ["BREAK"], openType: "WORK", note: "Návrat z přestávky" },
+        END_SHIFT: { closeTypes: ["WORK", "LUNCH", "BREAK", "DOCTOR", "BUSINESS_TRIP"], note: "Konec směny" },
+      };
+      const config = actionConfig[action];
+      if (!config) return;
+
+      setDemoActionLogs((prev) => {
+        const updated = prev.map((log) => {
+          if (
+            log.userId === activeEmployee.id &&
+            !log.checkOut &&
+            config.closeTypes?.includes(log.logType)
+          ) {
+            return { ...log, checkOut: now, status: "OK" };
+          }
+          return log;
+        });
+
+        if (!config.openType) return updated;
+
+        const alreadyOpen = updated.some(
+          (log) => log.userId === activeEmployee.id && !log.checkOut && log.logType === config.openType
+        );
+        if (alreadyOpen) return updated;
+
+        return [
+          {
+            id: Date.now(),
+            userId: activeEmployee.id,
+            checkIn: now,
+            checkOut: null,
+            logType: config.openType,
+            status: "OPEN",
+            note: config.note,
+            originalCheckIn: null,
+            originalCheckOut: null,
+          },
+          ...updated,
+        ];
+      });
+
+      setFeedback({ msg: messages[action] || "Docházka byla zapsána.", success: true });
+      return;
+    }
+
+    setIsLoading(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/attendance/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: activeEmployee.id,
+          action,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setFeedback({ msg: data.message || messages[action] || "Docházka byla zapsána.", success: true });
+        await loadEmployeeData();
+      } else {
+        setFeedback({ msg: data.error || "Docházku se nepodařilo zapsat.", success: false });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ msg: "Chyba spojení se serverem.", success: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePortalCreateShift = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeEmployee || !portalShiftDate || !portalShiftStartTime || !portalShiftEndTime) {
+      setFeedback({ msg: "Vyplňte datum, začátek a konec směny.", success: false });
+      return;
+    }
+
+    const startDate = new Date(portalShiftDate);
+    const endDate = portalShiftEndDate ? new Date(portalShiftEndDate) : startDate;
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      setFeedback({ msg: "Zadejte platné datum směny.", success: false });
+      return;
+    }
+    if (endDate < startDate) {
+      setFeedback({ msg: "Datum do nesmí být před datem od.", success: false });
+      return;
+    }
+    if (portalShiftStartTime === portalShiftEndTime) {
+      setFeedback({ msg: "Začátek a konec směny nesmí být shodný.", success: false });
+      return;
+    }
+
+    const createdDates: Date[] = [];
+    const cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      createdDates.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (createdDates.length > 62) {
+      setFeedback({ msg: "Rozsah směn je příliš dlouhý. Zadejte maximálně 62 dní.", success: false });
+      return;
+    }
+
+    if (isDemoMode) {
+      const createdShifts: PortalShift[] = createdDates.map((shiftDate, index) => ({
+        id: Date.now() + index,
+        userId: activeEmployee.id,
+        date: getLocalDateKey(shiftDate),
+        startTime: portalShiftStartTime,
+        endTime: portalShiftEndTime,
+        note: portalShiftNote.trim() || null,
+      }));
+
+      persistDemoAssignedShifts([...demoAssignedShifts, ...createdShifts]);
+      setFeedback({
+        msg: createdShifts.length === 1 ? "Směna byla naplánována." : `Naplánováno směn: ${createdShifts.length}.`,
+        success: true,
+      });
+      setPortalShiftDate("");
+      setPortalShiftEndDate("");
+      setPortalShiftNote("");
+      setActiveTab("shifts");
+      return;
+    }
+
+    setIsLoading(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: activeEmployee.id,
+          date: portalShiftDate,
+          dateTo: portalShiftEndDate || portalShiftDate,
+          startTime: portalShiftStartTime,
+          endTime: portalShiftEndTime,
+          note: portalShiftNote,
+        }),
+      });
+
+      if (res.ok) {
+        setFeedback({ msg: "Směna byla naplánována.", success: true });
+        setPortalShiftDate("");
+        setPortalShiftEndDate("");
+        setPortalShiftNote("");
+        setActiveTab("shifts");
+        await loadEmployeeData();
+      } else {
+        const data = await res.json();
+        setFeedback({ msg: data.error || "Směnu se nepodařilo naplánovat.", success: false });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ msg: "Chyba spojení se serverem.", success: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartEditShift = (shift: PortalShift) => {
+    setEditingShiftId(shift.id);
+    setEditShiftDate(formatShiftDateKey(shift.date));
+    setEditShiftStartTime(shift.startTime);
+    setEditShiftEndTime(shift.endTime);
+    setEditShiftNote(shift.note || "");
+    setFeedback(null);
+  };
+
+  const handleCancelEditShift = () => {
+    setEditingShiftId(null);
+  };
+
+  const handleUpdateShift = async (shiftId: number) => {
+    if (!activeEmployee) return;
+    if (!editShiftDate || !editShiftStartTime || !editShiftEndTime) {
+      setFeedback({ msg: "Vyplňte datum, začátek i konec směny.", success: false });
+      return;
+    }
+    if (editShiftStartTime === editShiftEndTime) {
+      setFeedback({ msg: "Začátek a konec směny nesmí být shodný.", success: false });
+      return;
+    }
+
+    if (isDemoMode) {
+      const originalShift = activeShifts.find((shift) => shift.id === shiftId);
+      if (!originalShift) {
+        setFeedback({ msg: "Směnu se nepodařilo najít.", success: false });
+        return;
+      }
+
+      const editedShift: PortalShift = {
+        ...originalShift,
+        userId: activeEmployee.id,
+        date: editShiftDate,
+        startTime: editShiftStartTime,
+        endTime: editShiftEndTime,
+        note: editShiftNote.trim() || null,
+      };
+      const alreadyStored = demoAssignedShifts.some(
+        (shift) => shift.id === shiftId && shift.userId === activeEmployee.id
+      );
+      const nextShifts = alreadyStored
+        ? demoAssignedShifts.map((shift) => (
+            shift.id === shiftId && shift.userId === activeEmployee.id ? editedShift : shift
+          ))
+        : [...demoAssignedShifts, editedShift];
+
+      persistDemoAssignedShifts(nextShifts);
+      persistDemoDeletedShiftIds(demoDeletedShiftIds.filter((id) => id !== shiftId));
+      setFeedback({ msg: "Směna byla upravena.", success: true });
+      setEditingShiftId(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setFeedback(null);
+    try {
+      const res = await fetch("/api/shifts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: shiftId,
+          date: editShiftDate,
+          startTime: editShiftStartTime,
+          endTime: editShiftEndTime,
+          note: editShiftNote,
+        }),
+      });
+
+      if (res.ok) {
+        setFeedback({ msg: "Směna byla upravena.", success: true });
+        setEditingShiftId(null);
+        await loadEmployeeData();
+      } else {
+        const data = await res.json();
+        setFeedback({ msg: data.error || "Směnu se nepodařilo upravit.", success: false });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ msg: "Chyba spojení se serverem.", success: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteShift = async (shiftId: number) => {
+    if (!confirm("Opravdu chcete smazat tuto směnu?")) return;
+
+    if (isDemoMode) {
+      const nextShifts = demoAssignedShifts.filter((shift) => shift.id !== shiftId);
+      persistDemoAssignedShifts(nextShifts);
+      persistDemoDeletedShiftIds(Array.from(new Set([...demoDeletedShiftIds, shiftId])));
+      setFeedback({ msg: "Směna byla smazána.", success: true });
+      if (editingShiftId === shiftId) setEditingShiftId(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(`/api/shifts?id=${shiftId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setFeedback({ msg: "Směna byla smazána.", success: true });
+        if (editingShiftId === shiftId) setEditingShiftId(null);
+        await loadEmployeeData();
+      } else {
+        const data = await res.json();
+        setFeedback({ msg: data.error || "Směnu se nepodařilo smazat.", success: false });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ msg: "Chyba spojení se serverem.", success: false });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Pre-fill form values when editing a log
   const handleSelectLogChange = (logIdVal: string) => {
     setSelectedLogId(logIdVal);
@@ -612,6 +1068,18 @@ export default function PortalPage() {
   const hoursWorked = calculateTotalHours();
   const balance = hoursWorked - monthlyFundTarget;
   const progressPercent = Math.min(100, Math.max(0, (hoursWorked / monthlyFundTarget) * 100));
+  const todayKey = getLocalDateKey();
+  const upcomingShifts = activeShifts
+    .filter((shift) => formatShiftDateKey(shift.date) >= todayKey)
+    .slice(0, 5);
+  const todaysShift = activeShifts.find((shift) => formatShiftDateKey(shift.date) === todayKey) || null;
+  const openLogs = activeLogs
+    .filter((log) => !log.checkOut && log.status === "OPEN")
+    .sort((a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime());
+  const currentOpenLog = openLogs[0] || null;
+  const openWorkLog = currentOpenLog?.logType === "WORK" ? currentOpenLog : null;
+  const activePauseLog = currentOpenLog && ["LUNCH", "BREAK"].includes(currentOpenLog.logType) ? currentOpenLog : null;
+  const shiftNetHours = todaysShift ? calculateShiftNetHours(todaysShift.startTime, todaysShift.endTime) : 0;
 
   // Helper date formatter
   const formatDateCzech = (isoString: string) => {
@@ -622,6 +1090,172 @@ export default function PortalPage() {
   const formatTimeCzech = (isoString: string | null) => {
     if (!isoString) return "--:--";
     return new Date(isoString).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const renderShiftScheduler = () => {
+    if (loggedInRole !== "CEO" || !activeEmployee) return null;
+
+    const plannedHours = calculateShiftNetHours(portalShiftStartTime, portalShiftEndTime);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return (
+      <div className="surface card-accent p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Přidat směny</p>
+            <h2 className="mt-1 text-lg font-bold text-[#1d1d1f] leading-tight">
+              {activeEmployee.lastName} {activeEmployee.firstName}
+            </h2>
+          </div>
+          <div className="rounded-xl border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-right">
+            <span className="block text-[9px] font-bold uppercase tracking-widest text-[#6e6e73]">Čistý čas</span>
+            <strong className="text-sm font-bold text-[#1d1d1f] font-mono">{plannedHours.toFixed(1)} hod</strong>
+          </div>
+        </div>
+
+        {feedback && (
+          <div className={`mb-4 rounded-xl border px-4 py-3 text-xs font-semibold ${
+            feedback.success
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700"
+              : "bg-rose-500/15 border-rose-500/30 text-rose-700"
+          }`}>
+            {feedback.msg}
+          </div>
+        )}
+
+        <form onSubmit={handlePortalCreateShift} className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Dnes", start: todayKey, end: "" },
+              { label: "Zítra", start: getLocalDateKey(tomorrow), end: "" },
+              { label: "Tento týden", ...getWeekRange(0) },
+              { label: "Příští týden", ...getWeekRange(1) },
+            ].map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  setPortalShiftDate(preset.start);
+                  setPortalShiftEndDate(preset.end);
+                }}
+                className="rounded-xl border border-black/[0.08] bg-black/[0.04] px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-[#1d1d1f] transition-all hover:bg-black/[0.06] active:scale-[0.98]"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                Datum od
+              </label>
+              <input
+                type="date"
+                value={portalShiftDate}
+                onChange={(e) => {
+                  setPortalShiftDate(e.target.value);
+                  if (!portalShiftEndDate) setPortalShiftEndDate(e.target.value);
+                }}
+                required
+                className="input text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                Datum do
+              </label>
+              <input
+                type="date"
+                value={portalShiftEndDate}
+                min={portalShiftDate || undefined}
+                onChange={(e) => setPortalShiftEndDate(e.target.value)}
+                className="input text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                Od
+              </label>
+              <input
+                type="time"
+                value={portalShiftStartTime}
+                onChange={(e) => setPortalShiftStartTime(e.target.value)}
+                required
+                className="input text-xs font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                Do
+              </label>
+              <input
+                type="time"
+                value={portalShiftEndTime}
+                onChange={(e) => setPortalShiftEndTime(e.target.value)}
+                required
+                className="input text-xs font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {SHIFT_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => {
+                  setPortalShiftStartTime(preset.start);
+                  setPortalShiftEndTime(preset.end);
+                  if (!portalShiftNote.trim()) setPortalShiftNote(`${preset.label} směna`);
+                }}
+                className={`rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-wide transition-all active:scale-[0.96] ${
+                  portalShiftStartTime === preset.start && portalShiftEndTime === preset.end
+                    ? "border-[#0071e3]/30 bg-[#0071e3]/10 text-[#0071e3]"
+                    : "border-black/[0.08] bg-black/[0.04] text-[#1d1d1f] hover:bg-black/[0.06]"
+                }`}
+              >
+                {preset.label}
+                <span className="block text-[9px] font-mono font-normal text-[#86868b]">
+                  {preset.start}-{preset.end}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest mb-1.5">
+                Poznámka
+              </label>
+              <input
+                type="text"
+                placeholder="Ranní směna, záskok, inventura..."
+                value={portalShiftNote}
+                onChange={(e) => setPortalShiftNote(e.target.value)}
+                className="input text-xs"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn-primary h-[42px] self-end px-5"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <CalendarPlus className="h-3.5 w-3.5" />
+                  Uložit směny
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
   };
 
   if (!isAuthorized) {
@@ -648,7 +1282,9 @@ export default function PortalPage() {
 
           {/* Employee identity */}
           <div className="flex items-center gap-2 bg-white/50 border border-black/[0.08] px-3 py-2 rounded-2xl self-start sm:self-auto shadow-sm">
-            <span className="text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest font-mono">Přihlášen jako:</span>
+            <span className="text-[10px] font-bold text-[#6e6e73] uppercase tracking-widest font-mono">
+              {loggedInRole === "CEO" ? "Zaměstnanec:" : "Přihlášen jako:"}
+            </span>
             {loggedInRole === "CEO" ? (
               <select
                 value={activeEmployee?.id || ""}
@@ -658,7 +1294,7 @@ export default function PortalPage() {
                 }}
                 className="bg-transparent text-xs font-bold text-[#1d1d1f] outline-none cursor-pointer"
               >
-                {employees.map((emp) => (
+                {employees.filter((emp) => emp.role !== "CEO").map((emp) => (
                   <option key={emp.id} value={emp.id} className="bg-white text-[#1d1d1f]">
                     {emp.lastName} {emp.firstName} ({emp.department})
                   </option>
@@ -682,12 +1318,147 @@ export default function PortalPage() {
               Přehled docházky
             </button>
             <button onClick={() => setActiveTab("shifts")} className={`tab ${activeTab === "shifts" ? "tab-active" : ""}`}>
-              Můj plán směn ({activeShifts.length})
+              {loggedInRole === "CEO" ? "Plán směn" : "Můj plán směn"} ({activeShifts.length})
             </button>
           </div>
 
           {activeTab === "attendance" ? (
             <>
+              <div className="surface card-accent p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Nejbližší směny</p>
+                    <h2 className="mt-1 text-xl font-bold text-[#1d1d1f]">
+                      {upcomingShifts.length > 0
+                        ? `${upcomingShifts.length} směn v plánu`
+                        : "Nemáte naplánované žádné směny"}
+                    </h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full lg:w-auto">
+                    {upcomingShifts.length > 0 ? (
+                      upcomingShifts.map((shift) => (
+                        <div
+                          key={shift.id}
+                          className={`rounded-xl border px-3 py-2 min-w-[120px] ${
+                            formatShiftDateKey(shift.date) === todayKey
+                              ? "border-[#0071e3]/30 bg-[#0071e3]/10"
+                              : "border-black/[0.08] bg-black/[0.03]"
+                          }`}
+                        >
+                          <span className="block text-[10px] font-bold uppercase tracking-wide text-[#6e6e73]">
+                            {new Date(shift.date).toLocaleDateString("cs-CZ", { weekday: "short", day: "numeric", month: "numeric" })}
+                          </span>
+                          <strong className="mt-1 block text-sm font-bold text-[#1d1d1f]">
+                            {shift.startTime} - {shift.endTime}
+                          </strong>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="sm:col-span-3 lg:col-span-5 rounded-xl border border-black/[0.08] bg-black/[0.03] px-4 py-3 text-xs font-semibold text-[#6e6e73]">
+                        Rozpis zatím není vyplněný.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {renderShiftScheduler()}
+
+              {loggedInRole !== "CEO" && (
+              <div className="surface card-accent p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">Dnešní směna</p>
+                      {todaysShift ? (
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <strong className="text-xl font-bold text-[#1d1d1f]">
+                            {todaysShift.startTime} - {todaysShift.endTime}
+                          </strong>
+                          <span className="rounded-lg border border-black/[0.08] bg-black/[0.04] px-2 py-1 text-[10px] font-bold text-[#6e6e73]">
+                            {shiftNetHours.toFixed(1)} hod čistý
+                          </span>
+                          {todaysShift.note && (
+                            <span className="rounded-lg border border-[#0071e3]/20 bg-[#0071e3]/10 px-2 py-1 text-[10px] font-bold text-[#0071e3]">
+                              {todaysShift.note}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-sm font-semibold text-[#6e6e73]">
+                          Dnes není naplánovaná směna. Pokud pracujete mimo plán, můžete ji zahájit ručně.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-bold ${
+                        currentOpenLog
+                          ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700"
+                          : "border-black/[0.08] bg-black/[0.04] text-[#6e6e73]"
+                      }`}>
+                        <span className={`h-2 w-2 rounded-full ${currentOpenLog ? "bg-emerald-500" : "bg-[#86868b]"}`} />
+                        {currentOpenLog ? `Probíhá: ${getLogTypeLabel(currentOpenLog.logType)} od ${formatTimeCzech(currentOpenLog.checkIn)}` : "Momentálně není spuštěný záznam"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 lg:min-w-[560px]">
+                    <button
+                      type="button"
+                      onClick={() => handleAttendanceAction("START_WORK")}
+                      disabled={isLoading || Boolean(currentOpenLog)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0071e3] px-3 py-3 text-xs font-bold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      Začít směnu
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAttendanceAction(activePauseLog?.logType === "LUNCH" ? "END_LUNCH" : "START_LUNCH")}
+                      disabled={isLoading || (!openWorkLog && activePauseLog?.logType !== "LUNCH")}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 py-3 text-xs font-bold text-amber-700 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Utensils className="h-4 w-4" />
+                      {activePauseLog?.logType === "LUNCH" ? "Konec oběda" : "Oběd"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAttendanceAction(activePauseLog?.logType === "BREAK" ? "END_BREAK" : "START_BREAK")}
+                      disabled={isLoading || (!openWorkLog && activePauseLog?.logType !== "BREAK")}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-500/30 bg-sky-500/15 px-3 py-3 text-xs font-bold text-sky-700 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Coffee className="h-4 w-4" />
+                      {activePauseLog?.logType === "BREAK" ? "Konec pauzy" : "Pauza"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAttendanceAction("END_SHIFT")}
+                      disabled={isLoading || !currentOpenLog}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/15 px-3 py-3 text-xs font-bold text-rose-700 transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <StopCircle className="h-4 w-4" />
+                      Ukončit směnu
+                    </button>
+                  </div>
+                </div>
+
+                {feedback && (
+                  <div className={`mt-4 rounded-xl border px-4 py-3 text-xs font-semibold ${
+                    feedback.success
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700"
+                      : "bg-rose-500/15 border-rose-500/30 text-rose-700"
+                  }`}>
+                    {feedback.msg}
+                  </div>
+                )}
+              </div>
+              )}
+
               {/* STATS TILES: Hours tracking progress */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
             
@@ -815,7 +1586,7 @@ export default function PortalPage() {
                                 ? "bg-purple-500/15 border border-purple-500/30 text-purple-700"
                                 : "bg-black/[0.06] border border-black/[0.08] text-[#1d1d1f]"
                             }`}>
-                              {log.logType}
+                              {getLogTypeLabel(log.logType)}
                             </span>
                             {isError && (
                               <span className="bg-rose-500/15 border border-rose-500/30 text-rose-700 px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-0.5">
@@ -1034,7 +1805,7 @@ export default function PortalPage() {
                       return (
                         <div key={req.id} className="py-2.5 first:pt-0 last:pb-0 text-xs font-mono">
                           <div className="flex justify-between items-start gap-2">
-                            <span className="font-bold text-[#1d1d1f]">Oprava: {req.requestedLogType}</span>
+                            <span className="font-bold text-[#1d1d1f]">Oprava: {getLogTypeLabel(req.requestedLogType)}</span>
                             
                             <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${
                               isApproved 
@@ -1085,37 +1856,179 @@ export default function PortalPage() {
                 ) : (
                   <div className="divide-y divide-black/5 max-h-[600px] overflow-y-auto pr-2 premium-scroll">
                     {activeShifts.map((shift) => {
-                      const startParts = shift.startTime.split(":");
-                      const endParts = shift.endTime.split(":");
-                      const startMins = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
-                      const endMins = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
-                      let diffHours = (endMins - startMins) / 60;
-                      if (diffHours < 0) diffHours += 24;
-                      const netHours = diffHours > 6.0 ? diffHours - 0.5 : diffHours;
+                      const netHours = calculateShiftNetHours(shift.startTime, shift.endTime);
+                      const isEditing = editingShiftId === shift.id;
+                      const canManageShift = loggedInRole === "CEO";
+                      const shiftDateKey = formatShiftDateKey(shift.date);
+                      const isToday = shiftDateKey === todayKey;
+                      const isPast = shiftDateKey < todayKey;
+                      const shiftDate = new Date(shift.date);
 
-                      return (
-                        <div key={shift.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 text-xs font-mono">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-[#1d1d1f]">
-                                {new Date(shift.date).toLocaleDateString("cs-CZ", { weekday: "short", day: "numeric", month: "numeric" })}
+                      if (canManageShift && isEditing) {
+                        const editedNetHours = calculateShiftNetHours(editShiftStartTime, editShiftEndTime);
+
+                        return (
+                          <div key={shift.id} className="my-2 rounded-xl border border-[#0071e3]/20 bg-[#0071e3]/5 p-3 text-xs font-mono">
+                            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-[#6e6e73]">
+                                Úprava směny
                               </span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/[0.04] border border-black/[0.08] text-[#6e6e73]">
-                                Směna
+                              <span className="rounded-lg border border-black/[0.08] bg-white px-2 py-1 text-[10px] font-bold text-[#6e6e73]">
+                                {editedNetHours.toFixed(1)} hod čistý
                               </span>
                             </div>
+
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                              <div>
+                                <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Datum</label>
+                                <input
+                                  type="date"
+                                  value={editShiftDate}
+                                  onChange={(e) => setEditShiftDate(e.target.value)}
+                                  className="input bg-white text-[11px] font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Od</label>
+                                <input
+                                  type="time"
+                                  value={editShiftStartTime}
+                                  onChange={(e) => setEditShiftStartTime(e.target.value)}
+                                  className="input bg-white text-[11px] font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Do</label>
+                                <input
+                                  type="time"
+                                  value={editShiftEndTime}
+                                  onChange={(e) => setEditShiftEndTime(e.target.value)}
+                                  className="input bg-white text-[11px] font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold text-[#6e6e73] uppercase tracking-wide mb-1">Poznámka</label>
+                                <input
+                                  type="text"
+                                  value={editShiftNote}
+                                  onChange={(e) => setEditShiftNote(e.target.value)}
+                                  className="input bg-white text-[11px]"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {SHIFT_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => {
+                                    setEditShiftStartTime(preset.start);
+                                    setEditShiftEndTime(preset.end);
+                                  }}
+                                  className="rounded-lg border border-black/[0.08] bg-white px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-[#6e6e73] transition-all hover:bg-black/[0.04]"
+                                >
+                                  {preset.label} {preset.start}-{preset.end}
+                                </button>
+                              ))}
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={handleCancelEditShift}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#6e6e73] transition-all hover:bg-black/[0.04]"
+                              >
+                                <X className="h-3 w-3" />
+                                Zrušit
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => handleUpdateShift(shift.id)}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0071e3] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white transition-all active:scale-[0.97] disabled:opacity-50"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                Uložit
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={shift.id}
+                          className={`py-4 grid grid-cols-[72px_1fr] gap-3 text-xs font-mono sm:grid-cols-[84px_1fr_auto] sm:items-center ${
+                            isPast ? "opacity-70" : ""
+                          }`}
+                        >
+                          <div className={`rounded-xl border px-2 py-2 text-center ${
+                            isToday
+                              ? "border-[#0071e3]/30 bg-[#0071e3]/10"
+                              : "border-black/[0.08] bg-black/[0.04]"
+                          }`}>
+                            <span className="block text-[9px] font-bold uppercase tracking-widest text-[#6e6e73]">
+                              {isToday ? "Dnes" : shiftDate.toLocaleDateString("cs-CZ", { weekday: "short" })}
+                            </span>
+                            <strong className="block text-lg font-bold leading-tight text-[#1d1d1f]">
+                              {shiftDate.toLocaleDateString("cs-CZ", { day: "numeric" })}
+                            </strong>
+                            <span className="block text-[10px] font-bold text-[#6e6e73]">
+                              {shiftDate.toLocaleDateString("cs-CZ", { month: "numeric" })}
+                            </span>
+                          </div>
+
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <strong className="text-lg font-bold text-[#1d1d1f] font-mono">
+                                {shift.startTime} - {shift.endTime}
+                              </strong>
+                              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
+                                isToday
+                                  ? "bg-[#0071e3]/10 border-[#0071e3]/20 text-[#0071e3]"
+                                  : "bg-black/[0.04] border-black/[0.08] text-[#6e6e73]"
+                              }`}>
+                                Směna
+                              </span>
+                              {isPast && (
+                                <span className="px-2 py-0.5 rounded-lg border border-black/[0.08] bg-black/[0.03] text-[10px] font-bold text-[#86868b]">
+                                  Proběhla
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[#6e6e73] font-sans">
-                              Rozsah: <strong className="text-[#1d1d1f] font-mono">{shift.startTime} - {shift.endTime}</strong>
+                              {shiftDate.toLocaleDateString("cs-CZ", { weekday: "long", day: "numeric", month: "long" })}
                               {shift.note && (
-                                <span className="text-[#86868b] block text-[10px] mt-0.5"> Poznámka: {shift.note}</span>
+                                <span className="text-[#86868b] block text-[10px] mt-0.5 truncate">Poznámka: {shift.note}</span>
                               )}
                             </div>
                           </div>
 
-                          <div className="text-right self-end sm:self-auto">
-                            <span className="block font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2 py-0.5 rounded text-[10px] w-fit ml-auto sm:ml-0">
+                          <div className="col-span-2 flex flex-wrap items-center justify-end gap-2 self-end sm:col-span-1 sm:self-auto">
+                            <span className="font-bold text-[#6e6e73] bg-black/[0.04] border border-black/[0.08] px-2.5 py-1 rounded-lg text-[10px]">
                               {netHours.toFixed(1)} hod (čistý)
                             </span>
+                            {canManageShift && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditShift(shift)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-black/[0.08] bg-black/[0.04] px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#6e6e73] transition-all hover:bg-black/[0.06] active:scale-[0.96]"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Upravit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteShift(shift.id)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-700 transition-all hover:bg-rose-500/25 active:scale-[0.96]"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  Smazat
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       );
@@ -1126,6 +2039,8 @@ export default function PortalPage() {
 
               {/* RIGHT: Shift schedule stats summary */}
               <div className="lg:col-span-4 space-y-6">
+                {renderShiftScheduler()}
+
                 <div className="surface card-accent p-6">
                   
                   <h2 className="text-xs font-bold text-[#1d1d1f] uppercase tracking-widest mb-4">
@@ -1141,14 +2056,7 @@ export default function PortalPage() {
                       <span className="text-xs text-[#6e6e73]">Naplánované hodiny (Netto):</span>
                       <strong className="text-xs font-bold text-[#1d1d1f]">
                         {activeShifts.reduce((acc, shift) => {
-                          const startParts = shift.startTime.split(":");
-                          const endParts = shift.endTime.split(":");
-                          const startMins = parseInt(startParts[0], 10) * 60 + parseInt(startParts[1], 10);
-                          const endMins = parseInt(endParts[0], 10) * 60 + parseInt(endParts[1], 10);
-                          let diffHours = (endMins - startMins) / 60;
-                          if (diffHours < 0) diffHours += 24;
-                          const netHours = diffHours > 6.0 ? diffHours - 0.5 : diffHours;
-                          return acc + netHours;
+                          return acc + calculateShiftNetHours(shift.startTime, shift.endTime);
                         }, 0).toFixed(1)} hod
                       </strong>
                     </div>

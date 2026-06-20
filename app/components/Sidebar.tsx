@@ -124,7 +124,7 @@ export default function Sidebar({
               >
                 {/* 3D Glass pill sheen dome overlay for active list item */}
                 {isActive && (
-                  <span className="absolute top-0.5 left-0.5 right-0.5 height-[45%] bg-gradient-to-b from-white/80 to-white/5 rounded-t-xl pointer-events-none" />
+                  <span className="absolute top-0.5 left-0.5 right-0.5 h-[45%] bg-gradient-to-b from-white/80 to-white/5 rounded-t-xl pointer-events-none" />
                 )}
                 <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-[#0071e3]" : "text-[#86868b] group-hover:text-[#1d1d1f] transition-colors"}`} />
                 <span className="truncate">{item.name}</span>

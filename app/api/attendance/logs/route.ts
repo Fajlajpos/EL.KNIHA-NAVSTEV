@@ -1,8 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { LogType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
+
+const ACTION_CONFIG: Record<string, { closeTypes?: LogType[]; openType?: LogType; note: string; success: string }> = {
+  START_WORK: {
+    closeTypes: ["LUNCH", "BREAK"],
+    openType: "WORK",
+    note: "Začátek směny",
+    success: "Směna byla zahájena.",
+  },
+  START_LUNCH: {
+    closeTypes: ["WORK", "BREAK"],
+    openType: "LUNCH",
+    note: "Obědová pauza",
+    success: "Obědová pauza byla zahájena.",
+  },
+  END_LUNCH: {
+    closeTypes: ["LUNCH"],
+    openType: "WORK",
+    note: "Návrat z oběda",
+    success: "Obědová pauza byla ukončena.",
+  },
+  START_BREAK: {
+    closeTypes: ["WORK"],
+    openType: "BREAK",
+    note: "Přestávka",
+    success: "Přestávka byla zahájena.",
+  },
+  END_BREAK: {
+    closeTypes: ["BREAK"],
+    openType: "WORK",
+    note: "Návrat z přestávky",
+    success: "Přestávka byla ukončena.",
+  },
+  END_SHIFT: {
+    closeTypes: ["WORK", "LUNCH", "BREAK", "DOCTOR", "BUSINESS_TRIP"],
+    note: "Konec směny",
+    success: "Směna byla ukončena.",
+  },
+};
+
+async function resolveTargetUserId(session: Awaited<ReturnType<typeof getSession>>, requestedUserId?: number | null) {
+  if (!session) return null;
+
+  let sessionDbId = session.dbId || null;
+  if (!sessionDbId) {
+    const dbUser = await prisma.user.findUnique({
+      where: { employeeNumber: session.employeeNumber },
+      select: { id: true },
+    });
+    sessionDbId = dbUser?.id || null;
+  }
+
+  if (!sessionDbId) return null;
+
+  if (session.role === "EMPLOYEE") {
+    if (requestedUserId && requestedUserId !== sessionDbId) return null;
+    return sessionDbId;
+  }
+
+  if (session.role === "CEO" || session.role === "MANAGER") {
+    return requestedUserId || sessionDbId;
+  }
+
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,6 +136,105 @@ export async function GET(req: NextRequest) {
     console.error("Error in GET /api/attendance/logs:", error);
     return NextResponse.json(
       { error: "Failed to fetch attendance logs." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Neautorizovaný přístup. Musíte se přihlásit." }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const requestedUserId = body.userId ? parseInt(String(body.userId), 10) : null;
+    const targetUserId = await resolveTargetUserId(session, requestedUserId);
+
+    if (!targetUserId) {
+      return NextResponse.json({ error: "Nemáte oprávnění zapisovat docházku pro tohoto zaměstnance." }, { status: 403 });
+    }
+
+    const action = String(body.action || "").toUpperCase();
+    const config = ACTION_CONFIG[action];
+    if (!config) {
+      return NextResponse.json({ error: "Neplatná docházková akce." }, { status: 400 });
+    }
+
+    const now = new Date();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const openLogs = await tx.attendanceLog.findMany({
+        where: {
+          userId: targetUserId,
+          checkOut: null,
+          status: "OPEN",
+        },
+        orderBy: { checkIn: "desc" },
+      });
+
+      const openTypeSet = new Set(openLogs.map((log) => log.logType));
+
+      if (config.openType && openTypeSet.has(config.openType)) {
+        return {
+          error: config.openType === "WORK" ? "Směna už běží." : "Tato pauza už běží.",
+          status: 409,
+        };
+      }
+
+      const logsToClose = openLogs.filter((log) => config.closeTypes?.includes(log.logType));
+      if (config.closeTypes && config.closeTypes.length > 0 && logsToClose.length === 0 && action !== "START_WORK") {
+        return {
+          error: action === "END_SHIFT" ? "Není spuštěná žádná směna ani pauza." : "Nejdřív musí běžet směna nebo odpovídající pauza.",
+          status: 409,
+        };
+      }
+
+      if (logsToClose.length > 0) {
+        await tx.attendanceLog.updateMany({
+          where: {
+            id: { in: logsToClose.map((log) => log.id) },
+          },
+          data: {
+            checkOut: now,
+            status: "OK",
+          },
+        });
+      }
+
+      let openedLog = null;
+      if (config.openType) {
+        openedLog = await tx.attendanceLog.create({
+          data: {
+            userId: targetUserId,
+            checkIn: now,
+            logType: config.openType,
+            status: "OPEN",
+            note: body.note?.trim() || config.note,
+          },
+        });
+      }
+
+      return {
+        closedIds: logsToClose.map((log) => log.id),
+        openedLog,
+      };
+    });
+
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: config.success,
+      ...result,
+    });
+  } catch (error) {
+    console.error("Error in POST /api/attendance/logs:", error);
+    return NextResponse.json(
+      { error: "Nepodařilo se zapsat docházku." },
       { status: 500 }
     );
   }

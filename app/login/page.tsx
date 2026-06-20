@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ShieldAlert, UserCheck, Loader2, ArrowRight } from "lucide-react";
+import { ShieldAlert, Loader2, ArrowRight, MonitorSmartphone } from "lucide-react";
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -126,20 +127,14 @@ function LoginContent() {
             </button>
           </form>
 
-          {/* Credentials Hints */}
-          <div className="bg-black/[0.02] border border-black/[0.06] rounded-2xl p-4 text-[10px] text-[#6e6e73] leading-normal space-y-2">
-            <div className="font-bold uppercase tracking-widest text-[#6e6e73] mb-1.5 flex items-center gap-1.5">
-              <UserCheck className="h-3.5 w-3.5 text-[#0071e3]" />
-              Testovací přihlašovací údaje
-            </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              <div className="font-semibold text-[#6e6e73]">CEO (Ředitel):</div>
-              <div><strong className="font-mono text-[#1d1d1f]">pbures</strong> / <strong className="font-mono text-[#1d1d1f]">ceo123</strong></div>
-              <div className="font-semibold text-[#6e6e73]">Zaměstnanec:</div>
-              <div><strong className="font-mono text-[#1d1d1f]">jnovak</strong> / <strong className="font-mono text-[#1d1d1f]">novak123</strong></div>
-              <div className="font-semibold text-[#6e6e73]">Zaměstnanec:</div>
-              <div><strong className="font-mono text-[#1d1d1f]">lkralova</strong> / <strong className="font-mono text-[#1d1d1f]">kralova123</strong></div>
-            </div>
+          <div className="pt-2">
+            <Link
+              href="/kiosk"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-black/[0.08] bg-white/45 px-4 py-3.5 text-xs font-bold uppercase tracking-widest text-[#1d1d1f] transition-all hover:bg-white/70 active:scale-[0.98]"
+            >
+              <MonitorSmartphone className="h-4 w-4 text-[#0071e3]" />
+              Zaměstnanecký kiosek
+            </Link>
           </div>
         </div>
 

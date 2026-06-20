@@ -15,7 +15,7 @@ function getCookie(name: string) {
 
 /**
  * App shell — rozhoduje o rozložení podle cesty:
- *  - /login  → samostatná obrazovka (bez sidebaru)
+ *  - /login a /kiosk  → samostatná obrazovka (bez sidebaru)
  *  - ostatní → levý sidebar + hlavní obsah + aurora pozadí
  */
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -158,7 +158,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const isStandalone = pathname?.startsWith("/login");
+  const isStandalone = pathname?.startsWith("/login") || pathname?.startsWith("/kiosk");
 
   if (isStandalone) {
     return (
@@ -322,4 +322,3 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-

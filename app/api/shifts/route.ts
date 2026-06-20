@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, date, startTime, endTime, note } = body;
+    const { userId, date, dateTo, startTime, endTime, note } = body;
 
     if (!userId || !date || !startTime || !endTime) {
       return NextResponse.json(
@@ -120,17 +120,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newShift = await prisma.shift.create({
-      data: {
-        userId: parseInt(userId, 10),
-        date: new Date(date),
-        startTime,
-        endTime,
-        note: note?.trim() || null,
-      },
-    });
+    const startDate = new Date(date);
+    const endDate = dateTo ? new Date(dateTo) : startDate;
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return NextResponse.json({ error: "Neplatné datum směny." }, { status: 400 });
+    }
+    if (endDate < startDate) {
+      return NextResponse.json({ error: "Datum do nesmí být před datem od." }, { status: 400 });
+    }
 
-    return NextResponse.json(newShift, { status: 201 });
+    const createdDates: Date[] = [];
+    const cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      createdDates.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (createdDates.length > 62) {
+      return NextResponse.json({ error: "Rozsah směn je příliš dlouhý. Zadejte maximálně 62 dní." }, { status: 400 });
+    }
+
+    const userIdParsed = parseInt(userId, 10);
+    const data = createdDates.map((shiftDate) => ({
+      userId: userIdParsed,
+      date: shiftDate,
+      startTime,
+      endTime,
+      note: note?.trim() || null,
+    }));
+
+    if (data.length === 1) {
+      const newShift = await prisma.shift.create({ data: data[0] });
+      return NextResponse.json(newShift, { status: 201 });
+    }
+
+    const result = await prisma.shift.createMany({ data });
+    return NextResponse.json({ success: true, count: result.count }, { status: 201 });
   } catch (err) {
     console.error("Error in POST /api/shifts:", err);
     return NextResponse.json({ error: "Nepodařilo se vytvořit směnu." }, { status: 500 });
